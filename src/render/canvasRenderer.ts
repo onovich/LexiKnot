@@ -10,6 +10,7 @@ import {
 
 const GRID_SIZE = 32;
 const PORT_RADIUS = 6;
+const NODE_RADIUS = 8;
 
 const NODE_COLORS = {
   start: "#1d7f56",
@@ -116,27 +117,40 @@ function drawNode(context: CanvasRenderingContext2D, node: LexiNode, state: Rend
   const y = position.y * ratio;
   const isSelected = state.selectedNodeId === node.id;
   const isHighlighted = state.highlightedNodeIds.includes(node.id);
+  const zoom = state.viewport.scale;
 
   context.save();
   context.fillStyle = isHighlighted ? "#edf7ed" : "#ffffff";
   context.strokeStyle = isSelected ? "#111827" : "#b9c2cf";
-  context.lineWidth = isSelected ? 2 : 1;
+  context.lineWidth = (isSelected ? 2 : 1) * ratio * zoom;
   context.beginPath();
-  context.roundRect(x, y, width, height, 8);
+  context.roundRect(x, y, width, height, NODE_RADIUS * ratio * zoom);
   context.fill();
   context.stroke();
 
   context.fillStyle = NODE_COLORS[node.type];
-  context.fillRect(x, y, 5 * ratio, height);
+  context.fillRect(x, y, 5 * ratio * zoom, height);
 
   context.fillStyle = "#111827";
-  context.font = `${13 * ratio}px Inter, Segoe UI, sans-serif`;
+  context.font = `${13 * ratio * zoom}px Inter, Segoe UI, sans-serif`;
   context.textBaseline = "top";
-  context.fillText(getNodeTitle(node, state.nodeText), x + 16 * ratio, y + 12 * ratio);
+  drawFittedText(
+    context,
+    getNodeTitle(node, state.nodeText),
+    x + 16 * ratio * zoom,
+    y + 12 * ratio * zoom,
+    (NODE_SIZE.width - 28) * ratio * zoom,
+  );
 
   context.fillStyle = "#667085";
-  context.font = `${12 * ratio}px Inter, Segoe UI, sans-serif`;
-  context.fillText(getNodeSubtitle(node, state.nodeText), x + 16 * ratio, y + 34 * ratio);
+  context.font = `${12 * ratio * zoom}px Inter, Segoe UI, sans-serif`;
+  drawFittedText(
+    context,
+    getNodeSubtitle(node, state.nodeText),
+    x + 16 * ratio * zoom,
+    y + 34 * ratio * zoom,
+    (NODE_SIZE.width - 28) * ratio * zoom,
+  );
 
   if (node.inputs.length > 0) {
     drawPort(context, getInputPortPosition(node), state, "#ffffff", NODE_COLORS[node.type]);
@@ -159,11 +173,11 @@ function drawBezierEdge(
   const ratio = window.devicePixelRatio || 1;
   const start = worldToScreen(source, state.viewport);
   const end = worldToScreen(target, state.viewport);
-  const curve = Math.max(48, Math.abs(end.x - start.x) * 0.45);
+  const curve = Math.max(48 * state.viewport.scale, Math.abs(end.x - start.x) * 0.45);
 
   context.save();
   context.strokeStyle = color;
-  context.lineWidth = 2 * ratio;
+  context.lineWidth = 2 * ratio * state.viewport.scale;
   context.beginPath();
   context.moveTo(start.x * ratio, start.y * ratio);
   context.bezierCurveTo(
@@ -191,9 +205,15 @@ function drawPort(
   context.save();
   context.fillStyle = fill;
   context.strokeStyle = stroke;
-  context.lineWidth = 2 * ratio;
+  context.lineWidth = 2 * ratio * state.viewport.scale;
   context.beginPath();
-  context.arc(screen.x * ratio, screen.y * ratio, PORT_RADIUS * ratio, 0, Math.PI * 2);
+  context.arc(
+    screen.x * ratio,
+    screen.y * ratio,
+    PORT_RADIUS * ratio * state.viewport.scale,
+    0,
+    Math.PI * 2,
+  );
   context.fill();
   context.stroke();
   context.restore();
@@ -210,11 +230,39 @@ function drawPortHalo(
 
   context.save();
   context.strokeStyle = color;
-  context.lineWidth = 2 * ratio;
+  context.lineWidth = 2 * ratio * state.viewport.scale;
   context.beginPath();
-  context.arc(screen.x * ratio, screen.y * ratio, 13 * ratio, 0, Math.PI * 2);
+  context.arc(
+    screen.x * ratio,
+    screen.y * ratio,
+    13 * ratio * state.viewport.scale,
+    0,
+    Math.PI * 2,
+  );
   context.stroke();
   context.restore();
+}
+
+function drawFittedText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+): void {
+  if (context.measureText(text).width <= maxWidth) {
+    context.fillText(text, x, y);
+    return;
+  }
+
+  const ellipsis = "...";
+  let fitted = text;
+
+  while (fitted.length > 0 && context.measureText(`${fitted}${ellipsis}`).width > maxWidth) {
+    fitted = fitted.slice(0, -1);
+  }
+
+  context.fillText(fitted.length > 0 ? `${fitted}${ellipsis}` : ellipsis, x, y);
 }
 
 function getNodeTitle(node: LexiNode, text: RenderState["nodeText"]): string {

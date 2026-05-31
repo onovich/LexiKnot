@@ -26,6 +26,11 @@ export const NODE_SIZE = {
   height: 64,
 } as const;
 
+export const ZOOM_LIMITS = {
+  min: 0.65,
+  max: 2.4,
+} as const;
+
 export function getInputPortPosition(node: LexiNode): Point {
   return {
     x: node.position.x,

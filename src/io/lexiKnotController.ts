@@ -4,7 +4,7 @@ import type { NodeText } from "../i18n";
 import { testFullMatch, type RegexMatchResult } from "../parser/matcher";
 import { hitTestGraph } from "../render/hitTesting";
 import { renderCanvas } from "../render/canvasRenderer";
-import { screenToWorld, type Viewport } from "../render/viewModel";
+import { screenToWorld, type Viewport, ZOOM_LIMITS } from "../render/viewModel";
 import {
   addNode,
   connectFlow,
@@ -256,7 +256,11 @@ export class LexiKnotController {
     event.preventDefault();
     const screenPoint = getCanvasPoint(this.canvas, event);
     const worldBefore = screenToWorld(screenPoint, this.viewport);
-    const nextScale = clamp(this.viewport.scale * (event.deltaY > 0 ? 0.92 : 1.08), 0.45, 2.2);
+    const nextScale = clamp(
+      this.viewport.scale * (event.deltaY > 0 ? 0.92 : 1.08),
+      ZOOM_LIMITS.min,
+      ZOOM_LIMITS.max,
+    );
 
     this.viewport = {
       scale: nextScale,
