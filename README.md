@@ -21,6 +21,12 @@ cmd /c npm.cmd run dev
 cmd /c npm.cmd run validate
 ```
 
+Manual UI test on Windows:
+
+```powershell
+.\OpenTestUI.cmd
+```
+
 Individual checks:
 
 ```powershell
@@ -46,7 +52,7 @@ Keep parser code free of DOM, Canvas, coordinates, and layout concerns. Keep ren
 Run the dev server and open the local URL:
 
 ```powershell
-cmd /c npm.cmd run dev
+.\OpenTestUI.cmd
 ```
 
 Use the right inspector to parse a regex into graph nodes, edit selected node values, and test whether a sample string fully matches the generated regex.
