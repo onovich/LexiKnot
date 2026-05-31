@@ -23,6 +23,8 @@ describe("i18n language resolution", () => {
     for (const language of supportedLanguages) {
       expect(messages[language].parseToGraph.length).toBeGreaterThan(0);
       expect(messages[language].nodes.literal.length).toBeGreaterThan(0);
+      expect(messages[language].nodes.digitCharacter.length).toBeGreaterThan(0);
+      expect(messages[language].characterClassHelp.length).toBeGreaterThan(0);
     }
   });
 });

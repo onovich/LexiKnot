@@ -2,6 +2,7 @@ export {
   addNode,
   connectFlow,
   createInitialGraph,
+  deleteNode,
   findNode,
   graphToRegex,
   getLinearFlowNodeIds,

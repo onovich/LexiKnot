@@ -4,15 +4,20 @@ import { parseRegexPattern } from "../src/parser/regexParser";
 
 describe("regex parser", () => {
   it("turns a simple regex pattern into linear tokens", () => {
-    const result = parseRegexPattern("ab[c].");
+    const result = parseRegexPattern("^ab[c].\\d\\w\\s$");
 
     expect(result).toMatchObject({
       ok: true,
       tokens: [
+        { kind: "lineStart" },
         { kind: "literal", value: "a" },
         { kind: "literal", value: "b" },
         { kind: "characterClass", value: "c" },
         { kind: "anyCharacter" },
+        { kind: "digitCharacter" },
+        { kind: "wordCharacter" },
+        { kind: "whitespaceCharacter" },
+        { kind: "lineEnd" },
       ],
     });
   });

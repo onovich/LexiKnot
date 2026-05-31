@@ -4,6 +4,7 @@ import {
   addNode,
   connectFlow,
   createInitialGraph,
+  deleteNode,
   graphToRegex,
   regexToGraph,
   updateNodeData,
@@ -94,5 +95,24 @@ describe("LexiGraph forward projection", () => {
 
     expect(result.graph.nodes.map((node) => node.type)).toEqual(["start", "regexFragment", "end"]);
     expect(graphToRegex(result.graph)).toBe("[a-z]+");
+  });
+
+  it("can delete nodes and their connected edges", () => {
+    const createId = createIdFactory();
+    const literalResult = addNode(
+      createInitialGraph(),
+      { type: "literal", x: 240, y: 160 },
+      createId,
+    );
+    const connected = connectFlow(
+      connectFlow(literalResult.graph, "start", literalResult.node.id),
+      literalResult.node.id,
+      "end",
+    );
+
+    const afterDelete = deleteNode(connected, literalResult.node.id);
+
+    expect(afterDelete.nodes.map((node) => node.id)).toEqual(["start", "end"]);
+    expect(afterDelete.edges).toHaveLength(0);
   });
 });

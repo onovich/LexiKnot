@@ -14,6 +14,12 @@ export interface RenderState {
   readonly pendingSourceNodeId: string | null;
   readonly highlightedNodeIds: readonly string[];
   readonly nodeText: NodeText;
+  readonly connectionPreview: ConnectionPreview | null;
+}
+
+export interface ConnectionPreview {
+  readonly sourceNodeId: string;
+  readonly target: Point;
 }
 
 export interface HitResult {

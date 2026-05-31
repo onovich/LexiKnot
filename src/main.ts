@@ -41,6 +41,11 @@ app.innerHTML = `
         <button type="button" data-add-node="literal">${currentMessages.addLiteral}</button>
         <button type="button" data-add-node="characterClass">${currentMessages.addClass}</button>
         <button type="button" data-add-node="anyCharacter">${currentMessages.addAny}</button>
+        <button type="button" data-add-node="digitCharacter">${currentMessages.addDigit}</button>
+        <button type="button" data-add-node="wordCharacter">${currentMessages.addWord}</button>
+        <button type="button" data-add-node="whitespaceCharacter">${currentMessages.addWhitespace}</button>
+        <button type="button" data-add-node="lineStart">${currentMessages.addLineStart}</button>
+        <button type="button" data-add-node="lineEnd">${currentMessages.addLineEnd}</button>
       </div>
     </header>
     <section class="workbench">
@@ -58,6 +63,8 @@ app.innerHTML = `
           <span data-i18n="value">${currentMessages.value}</span>
           <input id="node-value" type="text" disabled />
         </label>
+        <button class="secondary-action" id="delete-node" type="button" disabled>${currentMessages.deleteNode}</button>
+        <p class="help-text" id="character-class-help">${currentMessages.characterClassHelp}</p>
         <label class="field">
           <span data-i18n="generatedRegex">${currentMessages.generatedRegex}</span>
           <output id="regex-output"></output>
@@ -81,6 +88,8 @@ const regexInput = document.querySelector<HTMLInputElement>("#regex-input");
 const parseButton = document.querySelector<HTMLButtonElement>("#parse-regex");
 const parseMessage = document.querySelector<HTMLOutputElement>("#parse-message");
 const valueInput = document.querySelector<HTMLInputElement>("#node-value");
+const deleteButton = document.querySelector<HTMLButtonElement>("#delete-node");
+const characterClassHelp = document.querySelector<HTMLParagraphElement>("#character-class-help");
 const regexOutput = document.querySelector<HTMLOutputElement>("#regex-output");
 const testStringInput = document.querySelector<HTMLInputElement>("#test-string");
 const matchOutput = document.querySelector<HTMLOutputElement>("#match-output");
@@ -96,6 +105,8 @@ if (
   parseButton === null ||
   parseMessage === null ||
   valueInput === null ||
+  deleteButton === null ||
+  characterClassHelp === null ||
   regexOutput === null ||
   testStringInput === null ||
   matchOutput === null
@@ -113,6 +124,7 @@ const controller = new LexiKnotController({
         regexInput,
         parseMessage,
         valueInput,
+        deleteButton,
         regexOutput,
         matchOutput,
       },
@@ -125,7 +137,16 @@ controller.setRegex(initialPattern);
 for (const button of addNodeButtons) {
   button.addEventListener("click", () => {
     const type = button.dataset.addNode;
-    if (type === "literal" || type === "characterClass" || type === "anyCharacter") {
+    if (
+      type === "literal" ||
+      type === "characterClass" ||
+      type === "anyCharacter" ||
+      type === "digitCharacter" ||
+      type === "wordCharacter" ||
+      type === "whitespaceCharacter" ||
+      type === "lineStart" ||
+      type === "lineEnd"
+    ) {
       controller.addNode(type);
     }
   });
@@ -147,6 +168,8 @@ languageSelect.addEventListener("change", () => {
       toolbar,
       languageLabel,
       parseButton,
+      deleteButton,
+      characterClassHelp,
       testStringInput,
       canvas,
     },
@@ -158,6 +181,7 @@ languageSelect.addEventListener("change", () => {
       regexInput,
       parseMessage,
       valueInput,
+      deleteButton,
       regexOutput,
       matchOutput,
     },
@@ -167,6 +191,10 @@ languageSelect.addEventListener("change", () => {
 
 valueInput.addEventListener("input", () => {
   controller.updateSelectedNodeValue(valueInput.value);
+});
+
+deleteButton.addEventListener("click", () => {
+  controller.deleteSelectedNode();
 });
 
 parseButton.addEventListener("click", () => {
@@ -187,6 +215,7 @@ interface InspectorElements {
   readonly regexInput: HTMLInputElement;
   readonly parseMessage: HTMLOutputElement;
   readonly valueInput: HTMLInputElement;
+  readonly deleteButton: HTMLButtonElement;
   readonly regexOutput: HTMLOutputElement;
   readonly matchOutput: HTMLOutputElement;
 }
@@ -218,6 +247,9 @@ function updateInspector(
     elements.valueInput.value = "";
   }
 
+  elements.deleteButton.disabled =
+    selected === null || selected.data.kind === "start" || selected.data.kind === "end";
+
   if (snapshot.matchResult === null) {
     elements.matchOutput.value = "";
     elements.matchOutput.dataset.state = "empty";
@@ -235,6 +267,8 @@ interface StaticTextElements {
   readonly toolbar: HTMLElement;
   readonly languageLabel: HTMLSpanElement;
   readonly parseButton: HTMLButtonElement;
+  readonly deleteButton: HTMLButtonElement;
+  readonly characterClassHelp: HTMLParagraphElement;
   readonly testStringInput: HTMLInputElement;
   readonly canvas: HTMLCanvasElement;
 }
@@ -244,6 +278,8 @@ function updateStaticText(elements: StaticTextElements, text: Messages): void {
   elements.toolbar.setAttribute("aria-label", text.nodeTools);
   elements.languageLabel.textContent = text.language;
   elements.parseButton.textContent = text.parseToGraph;
+  elements.deleteButton.textContent = text.deleteNode;
+  elements.characterClassHelp.textContent = text.characterClassHelp;
   elements.testStringInput.placeholder = text.testPlaceholder;
   elements.canvas.setAttribute("aria-label", text.graphCanvas);
 
@@ -255,6 +291,11 @@ function updateStaticText(elements: StaticTextElements, text: Messages): void {
   setButtonText("literal", text.addLiteral);
   setButtonText("characterClass", text.addClass);
   setButtonText("anyCharacter", text.addAny);
+  setButtonText("digitCharacter", text.addDigit);
+  setButtonText("wordCharacter", text.addWord);
+  setButtonText("whitespaceCharacter", text.addWhitespace);
+  setButtonText("lineStart", text.addLineStart);
+  setButtonText("lineEnd", text.addLineEnd);
 }
 
 function setText(key: string, value: string): void {

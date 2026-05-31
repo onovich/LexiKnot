@@ -101,6 +101,19 @@ export function updateNodeData(graph: LexiGraph, nodeId: string, data: NodeData)
   };
 }
 
+export function deleteNode(graph: LexiGraph, nodeId: string): LexiGraph {
+  if (nodeId === "start" || nodeId === "end") {
+    return graph;
+  }
+
+  return {
+    nodes: graph.nodes.filter((node) => node.id !== nodeId),
+    edges: graph.edges.filter(
+      (edge) => edge.sourceNodeId !== nodeId && edge.targetNodeId !== nodeId,
+    ),
+  };
+}
+
 export function connectFlow(
   graph: LexiGraph,
   sourceNodeId: string,
@@ -201,6 +214,16 @@ function createDefaultData(type: AddNodeRequest["type"]): NodeData {
       return { kind: "characterClass", value: "a-z" };
     case "anyCharacter":
       return { kind: "anyCharacter" };
+    case "digitCharacter":
+      return { kind: "digitCharacter" };
+    case "wordCharacter":
+      return { kind: "wordCharacter" };
+    case "whitespaceCharacter":
+      return { kind: "whitespaceCharacter" };
+    case "lineStart":
+      return { kind: "lineStart" };
+    case "lineEnd":
+      return { kind: "lineEnd" };
     case "regexFragment":
       return { kind: "regexFragment", expression: "", label: "Fragment" };
   }
@@ -214,6 +237,16 @@ function nodeToRegexSegment(node: LexiNode): string {
       return normalizeCharacterClass(node.data.value);
     case "anyCharacter":
       return ".";
+    case "digitCharacter":
+      return "\\d";
+    case "wordCharacter":
+      return "\\w";
+    case "whitespaceCharacter":
+      return "\\s";
+    case "lineStart":
+      return "^";
+    case "lineEnd":
+      return "$";
     case "regexFragment":
       return node.data.expression;
     case "start":
@@ -285,6 +318,51 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         type: "anyCharacter",
         position,
         data: { kind: "anyCharacter" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "digitCharacter":
+      return {
+        id: `digitCharacter-${index + 1}`,
+        type: "digitCharacter",
+        position,
+        data: { kind: "digitCharacter" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "wordCharacter":
+      return {
+        id: `wordCharacter-${index + 1}`,
+        type: "wordCharacter",
+        position,
+        data: { kind: "wordCharacter" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "whitespaceCharacter":
+      return {
+        id: `whitespaceCharacter-${index + 1}`,
+        type: "whitespaceCharacter",
+        position,
+        data: { kind: "whitespaceCharacter" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "lineStart":
+      return {
+        id: `lineStart-${index + 1}`,
+        type: "lineStart",
+        position,
+        data: { kind: "lineStart" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "lineEnd":
+      return {
+        id: `lineEnd-${index + 1}`,
+        type: "lineEnd",
+        position,
+        data: { kind: "lineEnd" },
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };

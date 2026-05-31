@@ -18,6 +18,11 @@ const NODE_COLORS = {
   literal: "#2f67d8",
   characterClass: "#8762c8",
   anyCharacter: "#c46a2d",
+  digitCharacter: "#0f766e",
+  wordCharacter: "#a16207",
+  whitespaceCharacter: "#64748b",
+  lineStart: "#15803d",
+  lineEnd: "#be123c",
   regexFragment: "#687076",
 } as const;
 
@@ -31,6 +36,7 @@ export function renderCanvas(canvas: HTMLCanvasElement, state: RenderState): voi
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawGrid(context, canvas, state.viewport);
   drawEdges(context, state.graph, state);
+  drawConnectionPreview(context, state.graph, state);
   drawNodes(context, state.graph, state);
 }
 
@@ -102,6 +108,30 @@ function drawEdges(context: CanvasRenderingContext2D, graph: LexiGraph, state: R
   }
 }
 
+function drawConnectionPreview(
+  context: CanvasRenderingContext2D,
+  graph: LexiGraph,
+  state: RenderState,
+): void {
+  if (state.connectionPreview === null) {
+    return;
+  }
+
+  const source = graph.nodes.find((node) => node.id === state.connectionPreview?.sourceNodeId);
+  if (source === undefined) {
+    return;
+  }
+
+  drawBezierEdge(
+    context,
+    getOutputPortPosition(source),
+    state.connectionPreview.target,
+    state,
+    "#2f67d8",
+    true,
+  );
+}
+
 function drawNodes(context: CanvasRenderingContext2D, graph: LexiGraph, state: RenderState): void {
   for (const node of graph.nodes) {
     drawNode(context, node, state);
@@ -169,6 +199,7 @@ function drawBezierEdge(
   target: Point,
   state: RenderState,
   color: string,
+  isDashed = false,
 ): void {
   const ratio = window.devicePixelRatio || 1;
   const start = worldToScreen(source, state.viewport);
@@ -178,6 +209,9 @@ function drawBezierEdge(
   context.save();
   context.strokeStyle = color;
   context.lineWidth = 2 * ratio * state.viewport.scale;
+  if (isDashed) {
+    context.setLineDash([8 * ratio * state.viewport.scale, 6 * ratio * state.viewport.scale]);
+  }
   context.beginPath();
   context.moveTo(start.x * ratio, start.y * ratio);
   context.bezierCurveTo(
@@ -277,6 +311,16 @@ function getNodeTitle(node: LexiNode, text: RenderState["nodeText"]): string {
       return text.characterClass;
     case "anyCharacter":
       return text.anyCharacter;
+    case "digitCharacter":
+      return text.digitCharacter;
+    case "wordCharacter":
+      return text.wordCharacter;
+    case "whitespaceCharacter":
+      return text.whitespaceCharacter;
+    case "lineStart":
+      return text.lineStart;
+    case "lineEnd":
+      return text.lineEnd;
     case "regexFragment":
       return text.regexFragment;
   }
@@ -290,6 +334,16 @@ function getNodeSubtitle(node: LexiNode, text: RenderState["nodeText"]): string 
       return `[${node.data.value}]`;
     case "anyCharacter":
       return ".";
+    case "digitCharacter":
+      return "\\d";
+    case "wordCharacter":
+      return "\\w";
+    case "whitespaceCharacter":
+      return "\\s";
+    case "lineStart":
+      return "^";
+    case "lineEnd":
+      return "$";
     case "regexFragment":
       return node.data.expression;
     case "start":

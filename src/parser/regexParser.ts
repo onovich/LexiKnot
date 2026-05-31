@@ -18,6 +18,15 @@ export type RegexToken =
       readonly raw: string;
     }
   | {
+      readonly kind:
+        | "digitCharacter"
+        | "wordCharacter"
+        | "whitespaceCharacter"
+        | "lineStart"
+        | "lineEnd";
+      readonly raw: string;
+    }
+  | {
       readonly kind: "regexFragment";
       readonly expression: string;
       readonly label: string;
@@ -89,6 +98,18 @@ function toRegexToken(element: AST.Element, warnings: string[]): RegexToken {
         return { kind: "anyCharacter", raw: element.raw };
       }
 
+      if (element.raw === "\\d") {
+        return { kind: "digitCharacter", raw: element.raw };
+      }
+
+      if (element.raw === "\\w") {
+        return { kind: "wordCharacter", raw: element.raw };
+      }
+
+      if (element.raw === "\\s") {
+        return { kind: "whitespaceCharacter", raw: element.raw };
+      }
+
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
       return {
         kind: "regexFragment",
@@ -105,6 +126,14 @@ function toRegexToken(element: AST.Element, warnings: string[]): RegexToken {
         raw: element.raw,
       };
     case "Assertion":
+      if (element.raw === "^") {
+        return { kind: "lineStart", raw: element.raw };
+      }
+
+      if (element.raw === "$") {
+        return { kind: "lineEnd", raw: element.raw };
+      }
+
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
       return {
         kind: "regexFragment",
