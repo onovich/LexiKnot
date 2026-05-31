@@ -7,6 +7,10 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const layerRules = [
   {
+    file: "src/parser/regexParser.ts",
+    forbidden: ["../topology", "../render", "../io", "canvas", "document", "window"],
+  },
+  {
     file: "src/parser/regexEscapes.ts",
     forbidden: ["../topology", "../render", "../io", "canvas", "document", "window"],
   },

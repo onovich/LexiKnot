@@ -17,6 +17,7 @@ const NODE_COLORS = {
   literal: "#2f67d8",
   characterClass: "#8762c8",
   anyCharacter: "#c46a2d",
+  regexFragment: "#687076",
 } as const;
 
 export function renderCanvas(canvas: HTMLCanvasElement, state: RenderState): void {
@@ -114,9 +115,10 @@ function drawNode(context: CanvasRenderingContext2D, node: LexiNode, state: Rend
   const x = position.x * ratio;
   const y = position.y * ratio;
   const isSelected = state.selectedNodeId === node.id;
+  const isHighlighted = state.highlightedNodeIds.includes(node.id);
 
   context.save();
-  context.fillStyle = "#ffffff";
+  context.fillStyle = isHighlighted ? "#edf7ed" : "#ffffff";
   context.strokeStyle = isSelected ? "#111827" : "#b9c2cf";
   context.lineWidth = isSelected ? 2 : 1;
   context.beginPath();
@@ -227,6 +229,8 @@ function getNodeTitle(node: LexiNode): string {
       return "Character Class";
     case "anyCharacter":
       return "Any Character";
+    case "regexFragment":
+      return node.data.kind === "regexFragment" ? node.data.label : "Fragment";
   }
 }
 
@@ -238,6 +242,8 @@ function getNodeSubtitle(node: LexiNode): string {
       return `[${node.data.value}]`;
     case "anyCharacter":
       return ".";
+    case "regexFragment":
+      return node.data.expression;
     case "start":
       return "flow entry";
     case "end":

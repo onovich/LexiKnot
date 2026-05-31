@@ -1,0 +1,36 @@
+import { describe, expect, it } from "vitest";
+import { testFullMatch } from "../src/parser/matcher";
+import { parseRegexPattern } from "../src/parser/regexParser";
+
+describe("regex parser", () => {
+  it("turns a simple regex pattern into linear tokens", () => {
+    const result = parseRegexPattern("ab[c].");
+
+    expect(result).toMatchObject({
+      ok: true,
+      tokens: [
+        { kind: "literal", value: "a" },
+        { kind: "literal", value: "b" },
+        { kind: "characterClass", value: "c" },
+        { kind: "anyCharacter" },
+      ],
+    });
+  });
+
+  it("reports invalid regex syntax without throwing", () => {
+    expect(parseRegexPattern("[abc")).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it("tests full-string matches", () => {
+    expect(testFullMatch("ab[c].", "abcx")).toMatchObject({
+      isValid: true,
+      isMatch: true,
+    });
+    expect(testFullMatch("ab[c].", "zabcx")).toMatchObject({
+      isValid: true,
+      isMatch: false,
+    });
+  });
+});

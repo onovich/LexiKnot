@@ -22,5 +22,8 @@
     "typescript-eslint": "^8.0.0",
     "vite": "^6.0.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@eslint-community/regexpp": "^4.12.2"
   }
 }

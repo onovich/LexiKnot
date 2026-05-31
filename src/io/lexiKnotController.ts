@@ -1,5 +1,6 @@
 import { createIdFactory } from "../core/id";
 import type { Point } from "../core/geometry";
+import { testFullMatch, type RegexMatchResult } from "../parser/matcher";
 import { hitTestGraph } from "../render/hitTesting";
 import { renderCanvas } from "../render/canvasRenderer";
 import { screenToWorld, type Viewport } from "../render/viewModel";
@@ -8,7 +9,9 @@ import {
   connectFlow,
   createInitialGraph,
   findNode,
+  getLinearFlowNodeIds,
   graphToRegex,
+  regexToGraph,
   type LexiGraph,
   type LexiNode,
   type NodeData,
@@ -28,6 +31,8 @@ export interface LexiKnotSnapshot {
   readonly graph: LexiGraph;
   readonly regex: string;
   readonly selectedNode: LexiNode | null;
+  readonly parseMessage: string | null;
+  readonly matchResult: RegexMatchResult | null;
 }
 
 interface DragState {
@@ -47,7 +52,10 @@ export class LexiKnotController {
   private graph = createInitialGraph();
   private selectedNodeId: string | null = null;
   private pendingSourceNodeId: string | null = null;
-  private viewport: Viewport = { offset: { x: 32, y: 32 }, scale: 1 };
+  private parseMessage: string | null = null;
+  private sampleText = "";
+  private matchResult: RegexMatchResult | null = null;
+  private viewport: Viewport = { offset: { x: -64, y: 32 }, scale: 1 };
   private dragState: DragState | null = null;
 
   public constructor(options: LexiKnotControllerOptions) {
@@ -72,6 +80,8 @@ export class LexiKnotController {
     this.graph = result.graph;
     this.selectedNodeId = result.node.id;
     this.pendingSourceNodeId = null;
+    this.parseMessage = null;
+    this.updateMatchResult();
     this.render();
   }
 
@@ -88,6 +98,30 @@ export class LexiKnotController {
     }
 
     this.graph = updateNodeData(this.graph, selected.id, data);
+    this.parseMessage = null;
+    this.updateMatchResult();
+    this.render();
+  }
+
+  public setRegex(pattern: string): void {
+    const result = regexToGraph(pattern);
+    if (!result.ok) {
+      this.parseMessage = result.error;
+      this.render();
+      return;
+    }
+
+    this.graph = result.graph;
+    this.selectedNodeId = null;
+    this.pendingSourceNodeId = null;
+    this.parseMessage = result.warnings.length > 0 ? result.warnings.join(" ") : null;
+    this.updateMatchResult();
+    this.render();
+  }
+
+  public setSampleText(sampleText: string): void {
+    this.sampleText = sampleText;
+    this.updateMatchResult();
     this.render();
   }
 
@@ -96,6 +130,8 @@ export class LexiKnotController {
       graph: this.graph,
       regex: graphToRegex(this.graph),
       selectedNode: this.getSelectedNode(),
+      parseMessage: this.parseMessage,
+      matchResult: this.matchResult,
     };
   }
 
@@ -124,6 +160,8 @@ export class LexiKnotController {
       this.graph = connectFlow(this.graph, this.pendingSourceNodeId, hit.nodeId);
       this.selectedNodeId = hit.nodeId;
       this.pendingSourceNodeId = null;
+      this.parseMessage = null;
+      this.updateMatchResult();
       this.render();
       return;
     }
@@ -227,6 +265,7 @@ export class LexiKnotController {
       viewport: this.viewport,
       selectedNodeId: this.selectedNodeId,
       pendingSourceNodeId: this.pendingSourceNodeId,
+      highlightedNodeIds: this.getHighlightedNodeIds(),
     });
     this.onChange(this.getSnapshot());
   };
@@ -235,6 +274,21 @@ export class LexiKnotController {
     return this.selectedNodeId === null
       ? null
       : (findNode(this.graph, this.selectedNodeId) ?? null);
+  }
+
+  private updateMatchResult(): void {
+    this.matchResult =
+      this.sampleText === "" ? null : testFullMatch(graphToRegex(this.graph), this.sampleText);
+  }
+
+  private getHighlightedNodeIds(): readonly string[] {
+    if (this.matchResult?.isMatch !== true) {
+      return [];
+    }
+
+    return getLinearFlowNodeIds(this.graph).filter(
+      (nodeId) => nodeId !== "start" && nodeId !== "end",
+    );
   }
 }
 
@@ -252,6 +306,8 @@ function getUpdatedNodeData(node: LexiNode, value: string): NodeData | null {
       return { ...node.data, value };
     case "characterClass":
       return { ...node.data, value };
+    case "regexFragment":
+      return { ...node.data, expression: value };
     case "anyCharacter":
     case "start":
     case "end":

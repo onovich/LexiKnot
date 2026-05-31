@@ -1,6 +1,12 @@
 import type { Point } from "../core/geometry";
 
-export type NodeType = "start" | "end" | "literal" | "characterClass" | "anyCharacter";
+export type NodeType =
+  | "start"
+  | "end"
+  | "literal"
+  | "characterClass"
+  | "anyCharacter"
+  | "regexFragment";
 
 export type PortType = "flow" | "data";
 
@@ -31,12 +37,19 @@ export interface AnyCharacterNodeData {
   readonly kind: "anyCharacter";
 }
 
+export interface RegexFragmentNodeData {
+  readonly kind: "regexFragment";
+  readonly expression: string;
+  readonly label: string;
+}
+
 export type NodeData =
   | StartNodeData
   | EndNodeData
   | LiteralNodeData
   | CharacterClassNodeData
-  | AnyCharacterNodeData;
+  | AnyCharacterNodeData
+  | RegexFragmentNodeData;
 
 export interface LexiNode<TData extends NodeData = NodeData> {
   readonly id: string;

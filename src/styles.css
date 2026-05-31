@@ -67,6 +67,20 @@ input {
   border-color: #2f67d8;
 }
 
+.primary-action {
+  min-height: 36px;
+  border: 1px solid #2f67d8;
+  border-radius: 8px;
+  background: #2f67d8;
+  color: #ffffff;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.primary-action:hover {
+  background: #2659bf;
+}
+
 .topbar h1 {
   margin: 0;
   font-size: 20px;
@@ -129,6 +143,39 @@ canvas {
 
 .field output {
   overflow-wrap: anywhere;
+}
+
+.message {
+  min-height: 18px;
+  color: #9a5b13;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.match-result {
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 600;
+}
+
+.match-result[data-state="empty"] {
+  display: none;
+}
+
+.match-result[data-state="match"] {
+  background: #edf7ed;
+  color: #1d7f56;
+}
+
+.match-result[data-state="miss"] {
+  background: #fff4e5;
+  color: #995600;
+}
+
+.match-result[data-state="error"] {
+  background: #fdecec;
+  color: #a13e5c;
 }
 
 @media (max-width: 760px) {

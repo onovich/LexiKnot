@@ -11,6 +11,7 @@ export interface RenderState {
   readonly viewport: Viewport;
   readonly selectedNodeId: string | null;
   readonly pendingSourceNodeId: string | null;
+  readonly highlightedNodeIds: readonly string[];
 }
 
 export interface HitResult {

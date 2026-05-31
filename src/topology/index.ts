@@ -4,6 +4,8 @@ export {
   createInitialGraph,
   findNode,
   graphToRegex,
+  getLinearFlowNodeIds,
+  regexToGraph,
   updateNodeData,
   updateNodePosition,
 } from "./graph";
@@ -19,5 +21,6 @@ export type {
   NodeType,
   Port,
   PortType,
+  RegexFragmentNodeData,
   StartNodeData,
 } from "./types";

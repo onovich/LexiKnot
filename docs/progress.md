@@ -15,4 +15,13 @@ Current MVP limitations:
 
 - Regex generation follows one linear flow path from `start`.
 - Node insertion is toolbar-driven; connecting is done by selecting an output port then an input port.
-- Reverse parsing, auto layout, quantifiers, groups, and match-path highlighting are reserved for later phases.
+- Reverse parsing now supports linear literal, character class, wildcard, and fragment fallback nodes.
+- Quantifiers, groups, assertions, and alternation are currently preserved as fragment nodes instead of first-class editable structures.
+- Match highlighting currently highlights the linear graph path on full-string match.
+
+Continued Phase 2-3 progress:
+
+- Added `regexpp` parser integration in `src/parser`.
+- Added `regexToGraph()` to map parsed regex tokens into an auto-spaced graph.
+- Added parser, matcher, topology, render, and architecture tests.
+- Added UI controls for regex input, parsing, test string evaluation, and match feedback.

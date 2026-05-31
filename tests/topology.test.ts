@@ -5,6 +5,7 @@ import {
   connectFlow,
   createInitialGraph,
   graphToRegex,
+  regexToGraph,
   updateNodeData,
 } from "../src/topology";
 
@@ -61,5 +62,37 @@ describe("LexiGraph forward projection", () => {
     );
 
     expect(graphToRegex(connected)).toBe("[a-z].");
+  });
+
+  it("builds a laid-out graph from a regex pattern", () => {
+    const result = regexToGraph("ab[c].");
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
+
+    expect(result.graph.nodes.map((node) => node.type)).toEqual([
+      "start",
+      "literal",
+      "literal",
+      "characterClass",
+      "anyCharacter",
+      "end",
+    ]);
+    expect(result.graph.edges).toHaveLength(5);
+    expect(graphToRegex(result.graph)).toBe("ab[c].");
+  });
+
+  it("keeps complex regex syntax round-trippable as fragments", () => {
+    const result = regexToGraph("[a-z]+");
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
+
+    expect(result.graph.nodes.map((node) => node.type)).toEqual(["start", "regexFragment", "end"]);
+    expect(graphToRegex(result.graph)).toBe("[a-z]+");
   });
 });
