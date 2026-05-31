@@ -8,6 +8,11 @@ export interface NodeText {
   readonly literal: string;
   readonly characterClass: string;
   readonly anyCharacter: string;
+  readonly digitCharacter: string;
+  readonly wordCharacter: string;
+  readonly whitespaceCharacter: string;
+  readonly lineStart: string;
+  readonly lineEnd: string;
   readonly regexFragment: string;
   readonly flowEntry: string;
   readonly flowExit: string;
@@ -20,6 +25,13 @@ export interface Messages {
   readonly addLiteral: string;
   readonly addClass: string;
   readonly addAny: string;
+  readonly addDigit: string;
+  readonly addWord: string;
+  readonly addWhitespace: string;
+  readonly addLineStart: string;
+  readonly addLineEnd: string;
+  readonly deleteNode: string;
+  readonly characterClassHelp: string;
   readonly regexInput: string;
   readonly parseToGraph: string;
   readonly value: string;
@@ -57,6 +69,14 @@ export const messages: Record<LanguageCode, Messages> = {
     addLiteral: "Literal",
     addClass: "Class",
     addAny: "Any",
+    addDigit: "Digit",
+    addWord: "Word",
+    addWhitespace: "Space",
+    addLineStart: "^",
+    addLineEnd: "$",
+    deleteNode: "Delete node",
+    characterClassHelp:
+      "Character Class matches one character from a set, such as [abc] or [a-z]. It is different from a literal hyphen or connecting characters in sequence.",
     regexInput: "Regex input",
     parseToGraph: "Parse to graph",
     value: "Value",
@@ -75,6 +95,11 @@ export const messages: Record<LanguageCode, Messages> = {
       literal: "Literal",
       characterClass: "Character Class",
       anyCharacter: "Any Character",
+      digitCharacter: "Digit",
+      wordCharacter: "Word",
+      whitespaceCharacter: "Whitespace",
+      lineStart: "Line Start",
+      lineEnd: "Line End",
       regexFragment: "Fragment",
       flowEntry: "flow entry",
       flowExit: "flow exit",
@@ -87,6 +112,14 @@ export const messages: Record<LanguageCode, Messages> = {
     addLiteral: "文本",
     addClass: "字符集",
     addAny: "任意",
+    addDigit: "数字",
+    addWord: "单词",
+    addWhitespace: "空白",
+    addLineStart: "^",
+    addLineEnd: "$",
+    deleteNode: "删除节点",
+    characterClassHelp:
+      "字符集表示“从一组字符里匹配一个字符”，例如 [abc] 或 [a-z]。它不是把字符连起来，也不是字面量连字符。",
     regexInput: "正则输入",
     parseToGraph: "解析为图",
     value: "值",
@@ -105,6 +138,11 @@ export const messages: Record<LanguageCode, Messages> = {
       literal: "文本",
       characterClass: "字符集",
       anyCharacter: "任意字符",
+      digitCharacter: "数字",
+      wordCharacter: "单词字符",
+      whitespaceCharacter: "空白符",
+      lineStart: "行首",
+      lineEnd: "行尾",
       regexFragment: "片段",
       flowEntry: "流程入口",
       flowExit: "流程出口",
@@ -117,6 +155,14 @@ export const messages: Record<LanguageCode, Messages> = {
     addLiteral: "文字列",
     addClass: "文字クラス",
     addAny: "任意",
+    addDigit: "数字",
+    addWord: "単語",
+    addWhitespace: "空白",
+    addLineStart: "^",
+    addLineEnd: "$",
+    deleteNode: "ノード削除",
+    characterClassHelp:
+      "文字クラスは [abc] や [a-z] のように、候補の中から 1 文字を一致させます。文字を連結するものではありません。",
     regexInput: "正規表現入力",
     parseToGraph: "グラフ化",
     value: "値",
@@ -135,6 +181,11 @@ export const messages: Record<LanguageCode, Messages> = {
       literal: "文字列",
       characterClass: "文字クラス",
       anyCharacter: "任意文字",
+      digitCharacter: "数字",
+      wordCharacter: "単語文字",
+      whitespaceCharacter: "空白文字",
+      lineStart: "行頭",
+      lineEnd: "行末",
       regexFragment: "断片",
       flowEntry: "フロー入口",
       flowExit: "フロー出口",
@@ -147,6 +198,14 @@ export const messages: Record<LanguageCode, Messages> = {
     addLiteral: "Literal",
     addClass: "Clase",
     addAny: "Cualquiera",
+    addDigit: "Dígito",
+    addWord: "Palabra",
+    addWhitespace: "Espacio",
+    addLineStart: "^",
+    addLineEnd: "$",
+    deleteNode: "Eliminar nodo",
+    characterClassHelp:
+      "Una clase de caracteres coincide con un solo carácter de un conjunto, como [abc] o [a-z]. No concatena caracteres.",
     regexInput: "Entrada regex",
     parseToGraph: "Convertir a grafo",
     value: "Valor",
@@ -165,6 +224,11 @@ export const messages: Record<LanguageCode, Messages> = {
       literal: "Literal",
       characterClass: "Clase de caracteres",
       anyCharacter: "Cualquier carácter",
+      digitCharacter: "Dígito",
+      wordCharacter: "Carácter de palabra",
+      whitespaceCharacter: "Espacio",
+      lineStart: "Inicio de línea",
+      lineEnd: "Fin de línea",
       regexFragment: "Fragmento",
       flowEntry: "entrada de flujo",
       flowExit: "salida de flujo",
@@ -177,6 +241,14 @@ export const messages: Record<LanguageCode, Messages> = {
     addLiteral: "Literal",
     addClass: "Classe",
     addAny: "Qualquer",
+    addDigit: "Dígito",
+    addWord: "Palavra",
+    addWhitespace: "Espaço",
+    addLineStart: "^",
+    addLineEnd: "$",
+    deleteNode: "Excluir nó",
+    characterClassHelp:
+      "Classe de caracteres corresponde a um único caractere dentro de um conjunto, como [abc] ou [a-z]. Ela não concatena caracteres.",
     regexInput: "Entrada regex",
     parseToGraph: "Gerar grafo",
     value: "Valor",
@@ -195,6 +267,11 @@ export const messages: Record<LanguageCode, Messages> = {
       literal: "Literal",
       characterClass: "Classe de caracteres",
       anyCharacter: "Qualquer caractere",
+      digitCharacter: "Dígito",
+      wordCharacter: "Caractere de palavra",
+      whitespaceCharacter: "Espaço",
+      lineStart: "Início da linha",
+      lineEnd: "Fim da linha",
       regexFragment: "Fragmento",
       flowEntry: "entrada de fluxo",
       flowExit: "saída de fluxo",
@@ -207,6 +284,14 @@ export const messages: Record<LanguageCode, Messages> = {
     addLiteral: "Литерал",
     addClass: "Класс",
     addAny: "Любой",
+    addDigit: "Цифра",
+    addWord: "Слово",
+    addWhitespace: "Пробел",
+    addLineStart: "^",
+    addLineEnd: "$",
+    deleteNode: "Удалить узел",
+    characterClassHelp:
+      "Класс символов совпадает с одним символом из набора, например [abc] или [a-z]. Он не соединяет символы в последовательность.",
     regexInput: "Ввод regex",
     parseToGraph: "Построить граф",
     value: "Значение",
@@ -225,6 +310,11 @@ export const messages: Record<LanguageCode, Messages> = {
       literal: "Литерал",
       characterClass: "Класс символов",
       anyCharacter: "Любой символ",
+      digitCharacter: "Цифра",
+      wordCharacter: "Словесный символ",
+      whitespaceCharacter: "Пробельный символ",
+      lineStart: "Начало строки",
+      lineEnd: "Конец строки",
       regexFragment: "Фрагмент",
       flowEntry: "вход потока",
       flowExit: "выход потока",

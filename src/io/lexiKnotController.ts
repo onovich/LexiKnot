@@ -9,6 +9,7 @@ import {
   addNode,
   connectFlow,
   createInitialGraph,
+  deleteNode,
   findNode,
   getLinearFlowNodeIds,
   graphToRegex,
@@ -38,7 +39,7 @@ export interface LexiKnotSnapshot {
 }
 
 interface DragState {
-  readonly kind: "node" | "pan";
+  readonly kind: "node" | "pan" | "connection";
   readonly pointerId: number;
   readonly startScreen: Point;
   readonly startWorld: Point;
@@ -55,6 +56,7 @@ export class LexiKnotController {
   private graph = createInitialGraph();
   private selectedNodeId: string | null = null;
   private pendingSourceNodeId: string | null = null;
+  private connectionPreviewTarget: Point | null = null;
   private parseMessage: string | null = null;
   private sampleText = "";
   private matchResult: RegexMatchResult | null = null;
@@ -134,6 +136,24 @@ export class LexiKnotController {
     this.render();
   }
 
+  public deleteSelectedNode(): void {
+    if (
+      this.selectedNodeId === null ||
+      this.selectedNodeId === "start" ||
+      this.selectedNodeId === "end"
+    ) {
+      return;
+    }
+
+    this.graph = deleteNode(this.graph, this.selectedNodeId);
+    this.selectedNodeId = null;
+    this.pendingSourceNodeId = null;
+    this.connectionPreviewTarget = null;
+    this.parseMessage = null;
+    this.updateMatchResult();
+    this.render();
+  }
+
   public getSnapshot(): LexiKnotSnapshot {
     return {
       graph: this.graph,
@@ -151,6 +171,7 @@ export class LexiKnotController {
     this.canvas.addEventListener("pointercancel", this.handlePointerUp);
     this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
     window.addEventListener("resize", this.render);
+    window.addEventListener("keydown", this.handleKeyDown);
   }
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
@@ -159,18 +180,19 @@ export class LexiKnotController {
     const hit = hitTestGraph(this.graph, worldPoint);
 
     if (hit?.kind === "outputPort") {
+      this.canvas.setPointerCapture(event.pointerId);
       this.pendingSourceNodeId = hit.nodeId;
       this.selectedNodeId = hit.nodeId;
-      this.render();
-      return;
-    }
-
-    if (hit?.kind === "inputPort" && this.pendingSourceNodeId !== null) {
-      this.graph = connectFlow(this.graph, this.pendingSourceNodeId, hit.nodeId);
-      this.selectedNodeId = hit.nodeId;
-      this.pendingSourceNodeId = null;
-      this.parseMessage = null;
-      this.updateMatchResult();
+      this.connectionPreviewTarget = worldPoint;
+      this.dragState = {
+        kind: "connection",
+        pointerId: event.pointerId,
+        startScreen: screenPoint,
+        startWorld: worldPoint,
+        nodeId: hit.nodeId,
+        nodeStart: null,
+        viewportStart: this.viewport,
+      };
       this.render();
       return;
     }
@@ -235,6 +257,12 @@ export class LexiKnotController {
       return;
     }
 
+    if (this.dragState.kind === "connection") {
+      this.connectionPreviewTarget = screenToWorld(screenPoint, this.viewport);
+      this.render();
+      return;
+    }
+
     if (this.dragState.nodeId !== null && this.dragState.nodeStart !== null) {
       this.graph = updateNodePosition(
         this.graph,
@@ -248,7 +276,33 @@ export class LexiKnotController {
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
     if (this.dragState?.pointerId === event.pointerId) {
+      if (this.dragState.kind === "connection" && this.pendingSourceNodeId !== null) {
+        const worldPoint = screenToWorld(getCanvasPoint(this.canvas, event), this.viewport);
+        const hit = hitTestGraph(this.graph, worldPoint);
+        if (hit?.kind === "inputPort") {
+          this.graph = connectFlow(this.graph, this.pendingSourceNodeId, hit.nodeId);
+          this.selectedNodeId = hit.nodeId;
+          this.parseMessage = null;
+          this.updateMatchResult();
+        }
+
+        this.pendingSourceNodeId = null;
+        this.connectionPreviewTarget = null;
+      }
+
       this.dragState = null;
+      this.render();
+    }
+  };
+
+  private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    if (event.key === "Delete" || event.key === "Backspace") {
+      this.deleteSelectedNode();
     }
   };
 
@@ -280,6 +334,13 @@ export class LexiKnotController {
       pendingSourceNodeId: this.pendingSourceNodeId,
       highlightedNodeIds: this.getHighlightedNodeIds(),
       nodeText: this.nodeText,
+      connectionPreview:
+        this.pendingSourceNodeId === null || this.connectionPreviewTarget === null
+          ? null
+          : {
+              sourceNodeId: this.pendingSourceNodeId,
+              target: this.connectionPreviewTarget,
+            },
     });
     this.onChange(this.getSnapshot());
   };
@@ -323,6 +384,11 @@ function getUpdatedNodeData(node: LexiNode, value: string): NodeData | null {
     case "regexFragment":
       return { ...node.data, expression: value };
     case "anyCharacter":
+    case "digitCharacter":
+    case "wordCharacter":
+    case "whitespaceCharacter":
+    case "lineStart":
+    case "lineEnd":
     case "start":
     case "end":
       return null;
