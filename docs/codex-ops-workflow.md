@@ -40,8 +40,8 @@ lint, typecheck, build, test, structureCheck, docsCheck
 
 ## Dev Server
 
-Start command: ``
-Health URL: ``
+Start command: `cmd /c npm.cmd run dev`
+Health URL: `http://127.0.0.1:5173/`
 Ready text: ``
 Timeout seconds: 30
 

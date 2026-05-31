@@ -1,0 +1,246 @@
+import type { Point } from "../core/geometry";
+import type { LexiGraph, LexiNode } from "../topology";
+import {
+  getInputPortPosition,
+  getOutputPortPosition,
+  NODE_SIZE,
+  type RenderState,
+  worldToScreen,
+} from "./viewModel";
+
+const GRID_SIZE = 32;
+const PORT_RADIUS = 6;
+
+const NODE_COLORS = {
+  start: "#1d7f56",
+  end: "#a13e5c",
+  literal: "#2f67d8",
+  characterClass: "#8762c8",
+  anyCharacter: "#c46a2d",
+} as const;
+
+export function renderCanvas(canvas: HTMLCanvasElement, state: RenderState): void {
+  const context = canvas.getContext("2d");
+  if (context === null) {
+    return;
+  }
+
+  resizeCanvasToDisplaySize(canvas);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid(context, canvas, state.viewport);
+  drawEdges(context, state.graph, state);
+  drawNodes(context, state.graph, state);
+}
+
+function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement): void {
+  const ratio = window.devicePixelRatio || 1;
+  const nextWidth = Math.max(1, Math.floor(canvas.clientWidth * ratio));
+  const nextHeight = Math.max(1, Math.floor(canvas.clientHeight * ratio));
+
+  if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
+  }
+}
+
+function drawGrid(
+  context: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  viewport: RenderState["viewport"],
+): void {
+  const ratio = window.devicePixelRatio || 1;
+  const spacing = GRID_SIZE * viewport.scale * ratio;
+  const offsetX = (viewport.offset.x * ratio) % spacing;
+  const offsetY = (viewport.offset.y * ratio) % spacing;
+
+  context.save();
+  context.strokeStyle = "#d9e1ea";
+  context.lineWidth = 1;
+
+  for (let x = offsetX; x < canvas.width; x += spacing) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, canvas.height);
+    context.stroke();
+  }
+
+  for (let y = offsetY; y < canvas.height; y += spacing) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(canvas.width, y);
+    context.stroke();
+  }
+
+  context.restore();
+}
+
+function drawEdges(context: CanvasRenderingContext2D, graph: LexiGraph, state: RenderState): void {
+  for (const edge of graph.edges) {
+    const source = graph.nodes.find((node) => node.id === edge.sourceNodeId);
+    const target = graph.nodes.find((node) => node.id === edge.targetNodeId);
+
+    if (source === undefined || target === undefined) {
+      continue;
+    }
+
+    drawBezierEdge(
+      context,
+      getOutputPortPosition(source),
+      getInputPortPosition(target),
+      state,
+      "#53606f",
+    );
+  }
+
+  if (state.pendingSourceNodeId !== null) {
+    const source = graph.nodes.find((node) => node.id === state.pendingSourceNodeId);
+    if (source !== undefined) {
+      drawPortHalo(context, getOutputPortPosition(source), state, "#2f67d8");
+    }
+  }
+}
+
+function drawNodes(context: CanvasRenderingContext2D, graph: LexiGraph, state: RenderState): void {
+  for (const node of graph.nodes) {
+    drawNode(context, node, state);
+  }
+}
+
+function drawNode(context: CanvasRenderingContext2D, node: LexiNode, state: RenderState): void {
+  const ratio = window.devicePixelRatio || 1;
+  const position = worldToScreen(node.position, state.viewport);
+  const width = NODE_SIZE.width * state.viewport.scale * ratio;
+  const height = NODE_SIZE.height * state.viewport.scale * ratio;
+  const x = position.x * ratio;
+  const y = position.y * ratio;
+  const isSelected = state.selectedNodeId === node.id;
+
+  context.save();
+  context.fillStyle = "#ffffff";
+  context.strokeStyle = isSelected ? "#111827" : "#b9c2cf";
+  context.lineWidth = isSelected ? 2 : 1;
+  context.beginPath();
+  context.roundRect(x, y, width, height, 8);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = NODE_COLORS[node.type];
+  context.fillRect(x, y, 5 * ratio, height);
+
+  context.fillStyle = "#111827";
+  context.font = `${13 * ratio}px Inter, Segoe UI, sans-serif`;
+  context.textBaseline = "top";
+  context.fillText(getNodeTitle(node), x + 16 * ratio, y + 12 * ratio);
+
+  context.fillStyle = "#667085";
+  context.font = `${12 * ratio}px Inter, Segoe UI, sans-serif`;
+  context.fillText(getNodeSubtitle(node), x + 16 * ratio, y + 34 * ratio);
+
+  if (node.inputs.length > 0) {
+    drawPort(context, getInputPortPosition(node), state, "#ffffff", NODE_COLORS[node.type]);
+  }
+
+  if (node.outputs.length > 0) {
+    drawPort(context, getOutputPortPosition(node), state, NODE_COLORS[node.type], "#ffffff");
+  }
+
+  context.restore();
+}
+
+function drawBezierEdge(
+  context: CanvasRenderingContext2D,
+  source: Point,
+  target: Point,
+  state: RenderState,
+  color: string,
+): void {
+  const ratio = window.devicePixelRatio || 1;
+  const start = worldToScreen(source, state.viewport);
+  const end = worldToScreen(target, state.viewport);
+  const curve = Math.max(48, Math.abs(end.x - start.x) * 0.45);
+
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = 2 * ratio;
+  context.beginPath();
+  context.moveTo(start.x * ratio, start.y * ratio);
+  context.bezierCurveTo(
+    (start.x + curve) * ratio,
+    start.y * ratio,
+    (end.x - curve) * ratio,
+    end.y * ratio,
+    end.x * ratio,
+    end.y * ratio,
+  );
+  context.stroke();
+  context.restore();
+}
+
+function drawPort(
+  context: CanvasRenderingContext2D,
+  point: Point,
+  state: RenderState,
+  fill: string,
+  stroke: string,
+): void {
+  const ratio = window.devicePixelRatio || 1;
+  const screen = worldToScreen(point, state.viewport);
+
+  context.save();
+  context.fillStyle = fill;
+  context.strokeStyle = stroke;
+  context.lineWidth = 2 * ratio;
+  context.beginPath();
+  context.arc(screen.x * ratio, screen.y * ratio, PORT_RADIUS * ratio, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.restore();
+}
+
+function drawPortHalo(
+  context: CanvasRenderingContext2D,
+  point: Point,
+  state: RenderState,
+  color: string,
+): void {
+  const ratio = window.devicePixelRatio || 1;
+  const screen = worldToScreen(point, state.viewport);
+
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = 2 * ratio;
+  context.beginPath();
+  context.arc(screen.x * ratio, screen.y * ratio, 13 * ratio, 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+}
+
+function getNodeTitle(node: LexiNode): string {
+  switch (node.type) {
+    case "start":
+      return "Start";
+    case "end":
+      return "End";
+    case "literal":
+      return "Literal";
+    case "characterClass":
+      return "Character Class";
+    case "anyCharacter":
+      return "Any Character";
+  }
+}
+
+function getNodeSubtitle(node: LexiNode): string {
+  switch (node.data.kind) {
+    case "literal":
+      return node.data.value;
+    case "characterClass":
+      return `[${node.data.value}]`;
+    case "anyCharacter":
+      return ".";
+    case "start":
+      return "flow entry";
+    case "end":
+      return "flow exit";
+  }
+}

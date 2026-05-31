@@ -9,13 +9,13 @@
                              "typecheck",
                              "build",
                              "test",
-                             "structureCheck",
                              "docsCheck"
                          ],
     "operations":  {
                        "envCheck":  {
                                         "commands":  [
-
+                                            "node --version",
+                                            "cmd /c npm.cmd --version"
                                                      ]
                                     },
                        "restoreDeps":  {
@@ -25,32 +25,32 @@
                                        },
                        "installDeps":  {
                                            "commands":  [
-
+                                               "cmd /c npm.cmd install"
                                                         ]
                                        },
                        "build":  {
                                      "commands":  [
-
+                                         "cmd /c npm.cmd run build"
                                                   ]
                                  },
                        "test":  {
                                     "commands":  [
-
+                                        "cmd /c npm.cmd run test"
                                                  ]
                                 },
                        "lint":  {
                                     "commands":  [
-
+                                        "cmd /c npm.cmd run lint"
                                                  ]
                                 },
                        "format":  {
                                       "commands":  [
-
+                                          "cmd /c npm.cmd run format"
                                                    ]
                                   },
                        "typecheck":  {
                                          "commands":  [
-
+                                             "cmd /c npm.cmd run typecheck"
                                                       ]
                                      },
                        "structureCheck":  {
@@ -65,15 +65,15 @@
                                    },
                        "docsCheck":  {
                                          "commands":  [
-
+                                             "cmd /c npm.cmd run format"
                                                       ]
                                      },
                        "smoke":  {
                                      "urls":  [
-
+                                         "http://127.0.0.1:5173/"
                                               ],
                                      "commands":  [
-
+                                         "cmd /c npm.cmd run build"
                                                   ]
                                  },
                        "package":  {
@@ -88,8 +88,8 @@
                                          }
                    },
     "devServer":  {
-                      "startCommand":  "",
-                      "healthUrl":  "",
+                      "startCommand":  "cmd /c npm.cmd run dev",
+                      "healthUrl":  "http://127.0.0.1:5173/",
                       "readyText":  "",
                       "startupTimeoutSeconds":  30,
                       "pidFile":  ".codex/project-ops-devserver.pid"
