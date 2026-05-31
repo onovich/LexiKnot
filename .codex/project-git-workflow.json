@@ -1,0 +1,17 @@
+{
+    "schemaVersion":  1,
+    "initializedMarker":  "codex-project-git-workflow: initialized",
+    "initializedAt":  "2026-05-31 20:02:02 +08:00",
+    "projectName":  "LexiKnot",
+    "repoRoot":  "D:/LabProjects/LexiKnot",
+    "safeDirectory":  "D:/LabProjects/LexiKnot",
+    "statusCommand":  "git -c safe.directory=D:/LabProjects/LexiKnot status --short --branch",
+    "validationCommands":  [
+
+                           ],
+    "stagingPolicy":  "ask each time",
+    "commitCommand":  "",
+    "pushCommand":  "git -c safe.directory=D:/LabProjects/LexiKnot push -u origin HEAD",
+    "docsRequirement":  "Keep docs/LexiKnot-project-brief.md and docs/project-knowledge.md current when roadmap or architecture changes.",
+    "forbiddenCommands":  "Do not use reset, clean, force-push, or destructive history rewrites unless explicitly requested."
+}
