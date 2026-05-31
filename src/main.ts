@@ -1,48 +1,70 @@
 import "./styles.css";
+import {
+  getBrowserLanguage,
+  languageOptions,
+  messages,
+  type LanguageCode,
+  type Messages,
+} from "./i18n";
 import { LexiKnotController, type LexiKnotSnapshot } from "./io/lexiKnotController";
 
 const initialPattern = "ab[c].";
+let currentLanguage: LanguageCode = getBrowserLanguage();
+let currentMessages = messages[currentLanguage];
 const app = document.querySelector<HTMLElement>("#app");
 
 if (app === null) {
   throw new Error("Missing app root.");
 }
 
+document.documentElement.lang = currentLanguage;
+
 app.innerHTML = `
   <section class="workspace">
     <header class="topbar">
       <div>
         <h1>LexiKnot</h1>
-        <p>Bidirectional regex graph test UI</p>
+        <p id="app-subtitle">${currentMessages.appSubtitle}</p>
       </div>
-      <div class="toolbar" aria-label="Node tools">
-        <button type="button" data-add-node="literal" title="Add literal node">Literal</button>
-        <button type="button" data-add-node="characterClass" title="Add character class node">Class</button>
-        <button type="button" data-add-node="anyCharacter" title="Add any character node">Any</button>
+      <div class="toolbar" aria-label="${currentMessages.nodeTools}">
+        <label class="language-switch">
+          <span id="language-label">${currentMessages.language}</span>
+          <select id="language-select">
+            ${languageOptions
+              .map(
+                (option) =>
+                  `<option value="${option.code}" ${option.code === currentLanguage ? "selected" : ""}>${option.label}</option>`,
+              )
+              .join("")}
+          </select>
+        </label>
+        <button type="button" data-add-node="literal">${currentMessages.addLiteral}</button>
+        <button type="button" data-add-node="characterClass">${currentMessages.addClass}</button>
+        <button type="button" data-add-node="anyCharacter">${currentMessages.addAny}</button>
       </div>
     </header>
     <section class="workbench">
       <div class="canvas-shell">
-        <canvas id="lexi-canvas" aria-label="LexiKnot graph canvas"></canvas>
+        <canvas id="lexi-canvas" aria-label="${currentMessages.graphCanvas}"></canvas>
       </div>
-      <aside class="inspector" aria-label="Node inspector">
+      <aside class="inspector" aria-label="${currentMessages.nodeInspector}">
         <label class="field">
-          <span>Regex input</span>
+          <span data-i18n="regexInput">${currentMessages.regexInput}</span>
           <input id="regex-input" type="text" value="${initialPattern}" />
         </label>
-        <button class="primary-action" id="parse-regex" type="button">Parse to graph</button>
+        <button class="primary-action" id="parse-regex" type="button">${currentMessages.parseToGraph}</button>
         <output class="message" id="parse-message"></output>
         <label class="field">
-          <span>Value</span>
+          <span data-i18n="value">${currentMessages.value}</span>
           <input id="node-value" type="text" disabled />
         </label>
         <label class="field">
-          <span>Generated regex</span>
+          <span data-i18n="generatedRegex">${currentMessages.generatedRegex}</span>
           <output id="regex-output"></output>
         </label>
         <label class="field">
-          <span>Test string</span>
-          <input id="test-string" type="text" placeholder="Try a full-match sample" />
+          <span data-i18n="testString">${currentMessages.testString}</span>
+          <input id="test-string" type="text" placeholder="${currentMessages.testPlaceholder}" />
         </label>
         <output class="match-result" id="match-output"></output>
       </aside>
@@ -51,6 +73,10 @@ app.innerHTML = `
 `;
 
 const canvas = document.querySelector<HTMLCanvasElement>("#lexi-canvas");
+const subtitle = document.querySelector<HTMLParagraphElement>("#app-subtitle");
+const toolbar = document.querySelector<HTMLElement>(".toolbar");
+const languageLabel = document.querySelector<HTMLSpanElement>("#language-label");
+const languageSelect = document.querySelector<HTMLSelectElement>("#language-select");
 const regexInput = document.querySelector<HTMLInputElement>("#regex-input");
 const parseButton = document.querySelector<HTMLButtonElement>("#parse-regex");
 const parseMessage = document.querySelector<HTMLOutputElement>("#parse-message");
@@ -62,6 +88,10 @@ const addNodeButtons = document.querySelectorAll<HTMLButtonElement>("[data-add-n
 
 if (
   canvas === null ||
+  subtitle === null ||
+  toolbar === null ||
+  languageLabel === null ||
+  languageSelect === null ||
   regexInput === null ||
   parseButton === null ||
   parseMessage === null ||
@@ -75,14 +105,19 @@ if (
 
 const controller = new LexiKnotController({
   canvas,
+  nodeText: currentMessages.nodes,
   onChange: (snapshot) =>
-    updateInspector(snapshot, {
-      regexInput,
-      parseMessage,
-      valueInput,
-      regexOutput,
-      matchOutput,
-    }),
+    updateInspector(
+      snapshot,
+      {
+        regexInput,
+        parseMessage,
+        valueInput,
+        regexOutput,
+        matchOutput,
+      },
+      currentMessages,
+    ),
 });
 
 controller.setRegex(initialPattern);
@@ -95,6 +130,40 @@ for (const button of addNodeButtons) {
     }
   });
 }
+
+languageSelect.addEventListener("change", () => {
+  const nextLanguage = languageSelect.value as LanguageCode;
+  if (!(nextLanguage in messages)) {
+    return;
+  }
+
+  currentLanguage = nextLanguage;
+  currentMessages = messages[currentLanguage];
+  document.documentElement.lang = currentLanguage;
+  controller.setNodeText(currentMessages.nodes);
+  updateStaticText(
+    {
+      subtitle,
+      toolbar,
+      languageLabel,
+      parseButton,
+      testStringInput,
+      canvas,
+    },
+    currentMessages,
+  );
+  updateInspector(
+    controller.getSnapshot(),
+    {
+      regexInput,
+      parseMessage,
+      valueInput,
+      regexOutput,
+      matchOutput,
+    },
+    currentMessages,
+  );
+});
 
 valueInput.addEventListener("input", () => {
   controller.updateSelectedNodeValue(valueInput.value);
@@ -122,8 +191,12 @@ interface InspectorElements {
   readonly matchOutput: HTMLOutputElement;
 }
 
-function updateInspector(snapshot: LexiKnotSnapshot, elements: InspectorElements): void {
-  elements.regexOutput.value = snapshot.regex || "(empty)";
+function updateInspector(
+  snapshot: LexiKnotSnapshot,
+  elements: InspectorElements,
+  text: Messages,
+): void {
+  elements.regexOutput.value = snapshot.regex || text.empty;
 
   if (document.activeElement !== elements.regexInput) {
     elements.regexInput.value = snapshot.regex;
@@ -149,10 +222,51 @@ function updateInspector(snapshot: LexiKnotSnapshot, elements: InspectorElements
     elements.matchOutput.value = "";
     elements.matchOutput.dataset.state = "empty";
   } else if (!snapshot.matchResult.isValid) {
-    elements.matchOutput.value = snapshot.matchResult.error ?? "Invalid regex";
+    elements.matchOutput.value = snapshot.matchResult.error ?? text.invalidRegex;
     elements.matchOutput.dataset.state = "error";
   } else {
-    elements.matchOutput.value = snapshot.matchResult.isMatch ? "Full match" : "No full match";
+    elements.matchOutput.value = snapshot.matchResult.isMatch ? text.fullMatch : text.noFullMatch;
     elements.matchOutput.dataset.state = snapshot.matchResult.isMatch ? "match" : "miss";
+  }
+}
+
+interface StaticTextElements {
+  readonly subtitle: HTMLParagraphElement;
+  readonly toolbar: HTMLElement;
+  readonly languageLabel: HTMLSpanElement;
+  readonly parseButton: HTMLButtonElement;
+  readonly testStringInput: HTMLInputElement;
+  readonly canvas: HTMLCanvasElement;
+}
+
+function updateStaticText(elements: StaticTextElements, text: Messages): void {
+  elements.subtitle.textContent = text.appSubtitle;
+  elements.toolbar.setAttribute("aria-label", text.nodeTools);
+  elements.languageLabel.textContent = text.language;
+  elements.parseButton.textContent = text.parseToGraph;
+  elements.testStringInput.placeholder = text.testPlaceholder;
+  elements.canvas.setAttribute("aria-label", text.graphCanvas);
+
+  setText("regexInput", text.regexInput);
+  setText("value", text.value);
+  setText("generatedRegex", text.generatedRegex);
+  setText("testString", text.testString);
+
+  setButtonText("literal", text.addLiteral);
+  setButtonText("characterClass", text.addClass);
+  setButtonText("anyCharacter", text.addAny);
+}
+
+function setText(key: string, value: string): void {
+  const element = document.querySelector<HTMLElement>(`[data-i18n="${key}"]`);
+  if (element !== null) {
+    element.textContent = value;
+  }
+}
+
+function setButtonText(nodeType: string, value: string): void {
+  const element = document.querySelector<HTMLButtonElement>(`[data-add-node="${nodeType}"]`);
+  if (element !== null) {
+    element.textContent = value;
   }
 }

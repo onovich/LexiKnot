@@ -11,6 +11,7 @@ Phase 0-1 currently includes:
 - Regex input powered by `regexpp`, with reverse graph generation for linear patterns.
 - Fragment fallback nodes for quantifiers, groups, assertions, and other syntax that is not yet modeled as first-class graph nodes.
 - Full-match test string panel with graph highlighting on successful matches.
+- Language switcher with browser-language default for English, Chinese, Japanese, Spanish, Brazilian Portuguese, and Russian.
 - Vitest coverage for topology, render hit testing, and architecture boundaries.
 
 ## Commands

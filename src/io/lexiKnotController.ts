@@ -1,5 +1,6 @@
 import { createIdFactory } from "../core/id";
 import type { Point } from "../core/geometry";
+import type { NodeText } from "../i18n";
 import { testFullMatch, type RegexMatchResult } from "../parser/matcher";
 import { hitTestGraph } from "../render/hitTesting";
 import { renderCanvas } from "../render/canvasRenderer";
@@ -24,6 +25,7 @@ type AddableNodeType = Exclude<NodeType, "start" | "end">;
 
 export interface LexiKnotControllerOptions {
   readonly canvas: HTMLCanvasElement;
+  readonly nodeText: NodeText;
   readonly onChange: (state: LexiKnotSnapshot) => void;
 }
 
@@ -48,6 +50,7 @@ interface DragState {
 export class LexiKnotController {
   private readonly canvas: HTMLCanvasElement;
   private readonly onChange: (state: LexiKnotSnapshot) => void;
+  private nodeText: NodeText;
   private readonly createId = createIdFactory();
   private graph = createInitialGraph();
   private selectedNodeId: string | null = null;
@@ -61,7 +64,13 @@ export class LexiKnotController {
   public constructor(options: LexiKnotControllerOptions) {
     this.canvas = options.canvas;
     this.onChange = options.onChange;
+    this.nodeText = options.nodeText;
     this.bindEvents();
+    this.render();
+  }
+
+  public setNodeText(nodeText: NodeText): void {
+    this.nodeText = nodeText;
     this.render();
   }
 
@@ -266,6 +275,7 @@ export class LexiKnotController {
       selectedNodeId: this.selectedNodeId,
       pendingSourceNodeId: this.pendingSourceNodeId,
       highlightedNodeIds: this.getHighlightedNodeIds(),
+      nodeText: this.nodeText,
     });
     this.onChange(this.getSnapshot());
   };

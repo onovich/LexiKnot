@@ -67,6 +67,27 @@ input {
   border-color: #2f67d8;
 }
 
+.language-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.language-switch span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.language-switch select {
+  min-height: 36px;
+  border: 1px solid #c7d0dc;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #202124;
+  padding: 0 8px;
+}
+
 .primary-action {
   min-height: 36px;
   border: 1px solid #2f67d8;

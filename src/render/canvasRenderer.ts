@@ -132,11 +132,11 @@ function drawNode(context: CanvasRenderingContext2D, node: LexiNode, state: Rend
   context.fillStyle = "#111827";
   context.font = `${13 * ratio}px Inter, Segoe UI, sans-serif`;
   context.textBaseline = "top";
-  context.fillText(getNodeTitle(node), x + 16 * ratio, y + 12 * ratio);
+  context.fillText(getNodeTitle(node, state.nodeText), x + 16 * ratio, y + 12 * ratio);
 
   context.fillStyle = "#667085";
   context.font = `${12 * ratio}px Inter, Segoe UI, sans-serif`;
-  context.fillText(getNodeSubtitle(node), x + 16 * ratio, y + 34 * ratio);
+  context.fillText(getNodeSubtitle(node, state.nodeText), x + 16 * ratio, y + 34 * ratio);
 
   if (node.inputs.length > 0) {
     drawPort(context, getInputPortPosition(node), state, "#ffffff", NODE_COLORS[node.type]);
@@ -217,24 +217,24 @@ function drawPortHalo(
   context.restore();
 }
 
-function getNodeTitle(node: LexiNode): string {
+function getNodeTitle(node: LexiNode, text: RenderState["nodeText"]): string {
   switch (node.type) {
     case "start":
-      return "Start";
+      return text.start;
     case "end":
-      return "End";
+      return text.end;
     case "literal":
-      return "Literal";
+      return text.literal;
     case "characterClass":
-      return "Character Class";
+      return text.characterClass;
     case "anyCharacter":
-      return "Any Character";
+      return text.anyCharacter;
     case "regexFragment":
-      return node.data.kind === "regexFragment" ? node.data.label : "Fragment";
+      return text.regexFragment;
   }
 }
 
-function getNodeSubtitle(node: LexiNode): string {
+function getNodeSubtitle(node: LexiNode, text: RenderState["nodeText"]): string {
   switch (node.data.kind) {
     case "literal":
       return node.data.value;
@@ -245,8 +245,8 @@ function getNodeSubtitle(node: LexiNode): string {
     case "regexFragment":
       return node.data.expression;
     case "start":
-      return "flow entry";
+      return text.flowEntry;
     case "end":
-      return "flow exit";
+      return text.flowExit;
   }
 }

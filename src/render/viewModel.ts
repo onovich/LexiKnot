@@ -1,4 +1,5 @@
 import type { Point } from "../core/geometry";
+import type { NodeText } from "../i18n";
 import type { LexiGraph, LexiNode } from "../topology";
 
 export interface Viewport {
@@ -12,6 +13,7 @@ export interface RenderState {
   readonly selectedNodeId: string | null;
   readonly pendingSourceNodeId: string | null;
   readonly highlightedNodeIds: readonly string[];
+  readonly nodeText: NodeText;
 }
 
 export interface HitResult {
