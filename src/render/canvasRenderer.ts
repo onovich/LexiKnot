@@ -1,5 +1,11 @@
 import type { Point } from "../core/geometry";
-import type { LexiGraph, LexiNode } from "../topology";
+import {
+  getEdgeMeaning,
+  getNodeRole,
+  type EdgeMeaning,
+  type LexiGraph,
+  type LexiNode,
+} from "../topology";
 import {
   getInputPortPosition,
   getOutputPortPosition,
@@ -13,18 +19,23 @@ const PORT_RADIUS = 6;
 const NODE_RADIUS = 8;
 
 const NODE_COLORS = {
-  start: "#1d7f56",
-  end: "#a13e5c",
-  literal: "#2f67d8",
-  characterClass: "#8762c8",
-  anyCharacter: "#c46a2d",
-  digitCharacter: "#0f766e",
-  wordCharacter: "#a16207",
-  whitespaceCharacter: "#64748b",
-  lineStart: "#15803d",
-  lineEnd: "#be123c",
-  regexFragment: "#687076",
+  system: "#64748b",
+  noun: "#2563eb",
+  verb: "#d97706",
 } as const;
+
+const NODE_FILLS = {
+  system: "#f8fafc",
+  noun: "#eff6ff",
+  verb: "#fff7ed",
+} as const;
+
+const EDGE_COLORS: Record<EdgeMeaning, string> = {
+  entry: "#64748b",
+  subject: "#2563eb",
+  object: "#7c3aed",
+  exit: "#be123c",
+};
 
 export function renderCanvas(canvas: HTMLCanvasElement, state: RenderState): void {
   const context = canvas.getContext("2d");
@@ -96,14 +107,15 @@ function drawEdges(context: CanvasRenderingContext2D, graph: LexiGraph, state: R
       getOutputPortPosition(source),
       getInputPortPosition(target),
       state,
-      "#53606f",
+      EDGE_COLORS[getEdgeMeaning(graph, edge)],
+      state.selectedEdgeId === edge.id,
     );
   }
 
   if (state.pendingSourceNodeId !== null) {
     const source = graph.nodes.find((node) => node.id === state.pendingSourceNodeId);
     if (source !== undefined) {
-      drawPortHalo(context, getOutputPortPosition(source), state, "#2f67d8");
+      drawPortHalo(context, getOutputPortPosition(source), state, NODE_COLORS.verb);
     }
   }
 }
@@ -127,7 +139,8 @@ function drawConnectionPreview(
     getOutputPortPosition(source),
     state.connectionPreview.target,
     state,
-    "#2f67d8",
+    NODE_COLORS.verb,
+    false,
     true,
   );
 }
@@ -148,17 +161,19 @@ function drawNode(context: CanvasRenderingContext2D, node: LexiNode, state: Rend
   const isSelected = state.selectedNodeId === node.id;
   const isHighlighted = state.highlightedNodeIds.includes(node.id);
   const zoom = state.viewport.scale;
+  const role = getNodeRole(node.type);
+  const accentColor = NODE_COLORS[role];
 
   context.save();
-  context.fillStyle = isHighlighted ? "#edf7ed" : "#ffffff";
-  context.strokeStyle = isSelected ? "#111827" : "#b9c2cf";
+  context.fillStyle = isHighlighted ? "#edf7ed" : NODE_FILLS[role];
+  context.strokeStyle = isSelected ? accentColor : "#b9c2cf";
   context.lineWidth = (isSelected ? 2 : 1) * ratio * zoom;
   context.beginPath();
   context.roundRect(x, y, width, height, NODE_RADIUS * ratio * zoom);
   context.fill();
   context.stroke();
 
-  context.fillStyle = NODE_COLORS[node.type];
+  context.fillStyle = accentColor;
   context.fillRect(x, y, 5 * ratio * zoom, height);
 
   context.fillStyle = "#111827";
@@ -183,11 +198,11 @@ function drawNode(context: CanvasRenderingContext2D, node: LexiNode, state: Rend
   );
 
   if (node.inputs.length > 0) {
-    drawPort(context, getInputPortPosition(node), state, "#ffffff", NODE_COLORS[node.type]);
+    drawPort(context, getInputPortPosition(node), state, "#ffffff", accentColor);
   }
 
   if (node.outputs.length > 0) {
-    drawPort(context, getOutputPortPosition(node), state, NODE_COLORS[node.type], "#ffffff");
+    drawPort(context, getOutputPortPosition(node), state, accentColor, "#ffffff");
   }
 
   context.restore();
@@ -199,6 +214,7 @@ function drawBezierEdge(
   target: Point,
   state: RenderState,
   color: string,
+  isSelected = false,
   isDashed = false,
 ): void {
   const ratio = window.devicePixelRatio || 1;
@@ -208,7 +224,7 @@ function drawBezierEdge(
 
   context.save();
   context.strokeStyle = color;
-  context.lineWidth = 2 * ratio * state.viewport.scale;
+  context.lineWidth = (isSelected ? 4 : 2) * ratio * state.viewport.scale;
   if (isDashed) {
     context.setLineDash([8 * ratio * state.viewport.scale, 6 * ratio * state.viewport.scale]);
   }
@@ -321,6 +337,10 @@ function getNodeTitle(node: LexiNode, text: RenderState["nodeText"]): string {
       return text.lineStart;
     case "lineEnd":
       return text.lineEnd;
+    case "sequenceThen":
+      return text.sequenceThen;
+    case "oneOrMore":
+      return text.oneOrMore;
     case "regexFragment":
       return text.regexFragment;
   }
@@ -344,6 +364,10 @@ function getNodeSubtitle(node: LexiNode, text: RenderState["nodeText"]): string 
       return "^";
     case "lineEnd":
       return "$";
+    case "sequenceThen":
+      return "then";
+    case "oneOrMore":
+      return "+";
     case "regexFragment":
       return node.data.expression;
     case "start":

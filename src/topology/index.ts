@@ -10,9 +10,17 @@ export {
   updateNodeData,
   updateNodePosition,
 } from "./graph";
+export {
+  canConnectNodeTypes,
+  getEdgeMeaning,
+  getNodeRole,
+  type EdgeMeaning,
+  type NodeRole,
+} from "./semantics";
 export type {
   AnyCharacterNodeData,
   CharacterClassNodeData,
+  DigitCharacterNodeData,
   EndNodeData,
   LexiEdge,
   LexiGraph,
@@ -20,8 +28,12 @@ export type {
   LiteralNodeData,
   NodeData,
   NodeType,
+  OneOrMoreNodeData,
   Port,
   PortType,
   RegexFragmentNodeData,
+  SequenceThenNodeData,
   StartNodeData,
+  WhitespaceCharacterNodeData,
+  WordCharacterNodeData,
 } from "./types";

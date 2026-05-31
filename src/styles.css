@@ -45,26 +45,11 @@ input {
   background: #ffffff;
 }
 
-.toolbar {
+.topbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
   justify-content: flex-end;
-}
-
-.toolbar button {
-  min-height: 36px;
-  border: 1px solid #c7d0dc;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #202124;
-  padding: 0 12px;
-  cursor: pointer;
-}
-
-.toolbar button:hover {
-  border-color: #2f67d8;
 }
 
 .language-switch {
@@ -117,13 +102,6 @@ input {
   opacity: 0.45;
 }
 
-.help-text {
-  margin: -6px 0 0;
-  color: #667085;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
 .topbar h1 {
   margin: 0;
   font-size: 20px;
@@ -139,13 +117,110 @@ input {
 .workbench {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: 192px minmax(0, 1fr) 280px;
+}
+
+.node-palette {
+  border-right: 1px solid #d7dce2;
+  background: #ffffff;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.node-palette h2,
+.context-menu h2 {
+  margin: 0 0 8px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.node-list {
+  display: grid;
+  gap: 8px;
+}
+
+.node-tool {
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 0 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.node-tool-noun {
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.node-tool-verb {
+  border: 1px solid #fdba74;
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.node-tool:hover {
+  filter: brightness(0.98);
 }
 
 .canvas-shell {
   min-height: 0;
   position: relative;
   background: #eef2f6;
+}
+
+.selection-note {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: min(320px, calc(100% - 32px));
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 12%);
+  padding: 12px;
+}
+
+.selection-note h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.selection-note p {
+  margin: 8px 0 0;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.selection-note .selection-meta {
+  margin-top: 4px;
+  color: #667085;
+  font-weight: 700;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 10;
+  width: 190px;
+  max-height: min(520px, calc(100vh - 24px));
+  overflow-y: auto;
+  border: 1px solid #c7d0dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 42px rgb(15 23 42 / 18%);
+  padding: 10px;
+}
+
+.context-menu section + section {
+  margin-top: 12px;
 }
 
 canvas {
@@ -227,13 +302,22 @@ canvas {
     flex-direction: column;
   }
 
-  .toolbar {
+  .topbar-actions {
     justify-content: flex-start;
   }
 
   .workbench {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(420px, 1fr) auto;
+    grid-template-rows: auto minmax(420px, 1fr) auto;
+  }
+
+  .node-palette {
+    border-right: 0;
+    border-bottom: 1px solid #d7dce2;
+  }
+
+  .node-list {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   }
 
   .inspector {

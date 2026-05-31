@@ -22,6 +22,13 @@ describe("regex parser", () => {
     });
   });
 
+  it("turns plus quantifiers into verb tokens", () => {
+    expect(parseRegexPattern("a+")).toMatchObject({
+      ok: true,
+      tokens: [{ kind: "literal", value: "a" }, { kind: "oneOrMore" }],
+    });
+  });
+
   it("reports invalid regex syntax without throwing", () => {
     expect(parseRegexPattern("[abc")).toMatchObject({
       ok: false,

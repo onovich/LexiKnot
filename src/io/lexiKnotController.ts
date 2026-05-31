@@ -15,6 +15,7 @@ import {
   graphToRegex,
   regexToGraph,
   type LexiGraph,
+  type LexiEdge,
   type LexiNode,
   type NodeData,
   type NodeType,
@@ -34,6 +35,7 @@ export interface LexiKnotSnapshot {
   readonly graph: LexiGraph;
   readonly regex: string;
   readonly selectedNode: LexiNode | null;
+  readonly selectedEdge: LexiEdge | null;
   readonly parseMessage: string | null;
   readonly matchResult: RegexMatchResult | null;
 }
@@ -55,6 +57,7 @@ export class LexiKnotController {
   private readonly createId = createIdFactory();
   private graph = createInitialGraph();
   private selectedNodeId: string | null = null;
+  private selectedEdgeId: string | null = null;
   private pendingSourceNodeId: string | null = null;
   private connectionPreviewTarget: Point | null = null;
   private parseMessage: string | null = null;
@@ -96,6 +99,32 @@ export class LexiKnotController {
     this.render();
   }
 
+  public addNodeAt(type: AddableNodeType, screenPoint: Point): void {
+    const worldPoint = screenToWorld(screenPoint, this.viewport);
+    const result = addNode(
+      this.graph,
+      {
+        type,
+        x: worldPoint.x,
+        y: worldPoint.y,
+      },
+      this.createId,
+    );
+
+    this.graph = result.graph;
+    this.selectedNodeId = result.node.id;
+    this.selectedEdgeId = null;
+    this.pendingSourceNodeId = null;
+    this.parseMessage = null;
+    this.updateMatchResult();
+    this.render();
+  }
+
+  public canCreateNodeAt(screenPoint: Point): boolean {
+    const worldPoint = screenToWorld(screenPoint, this.viewport);
+    return hitTestGraph(this.graph, worldPoint) === null;
+  }
+
   public updateSelectedNodeValue(value: string): void {
     const selected = this.getSelectedNode();
 
@@ -124,6 +153,7 @@ export class LexiKnotController {
 
     this.graph = result.graph;
     this.selectedNodeId = null;
+    this.selectedEdgeId = null;
     this.pendingSourceNodeId = null;
     this.parseMessage = result.warnings.length > 0 ? result.warnings.join(" ") : null;
     this.updateMatchResult();
@@ -147,6 +177,7 @@ export class LexiKnotController {
 
     this.graph = deleteNode(this.graph, this.selectedNodeId);
     this.selectedNodeId = null;
+    this.selectedEdgeId = null;
     this.pendingSourceNodeId = null;
     this.connectionPreviewTarget = null;
     this.parseMessage = null;
@@ -159,6 +190,7 @@ export class LexiKnotController {
       graph: this.graph,
       regex: graphToRegex(this.graph),
       selectedNode: this.getSelectedNode(),
+      selectedEdge: this.getSelectedEdge(),
       parseMessage: this.parseMessage,
       matchResult: this.matchResult,
     };
@@ -180,9 +212,14 @@ export class LexiKnotController {
     const hit = hitTestGraph(this.graph, worldPoint);
 
     if (hit?.kind === "outputPort") {
+      if (hit.nodeId === undefined) {
+        return;
+      }
+
       this.canvas.setPointerCapture(event.pointerId);
       this.pendingSourceNodeId = hit.nodeId;
       this.selectedNodeId = hit.nodeId;
+      this.selectedEdgeId = null;
       this.connectionPreviewTarget = worldPoint;
       this.dragState = {
         kind: "connection",
@@ -198,6 +235,10 @@ export class LexiKnotController {
     }
 
     if (hit?.kind === "node") {
+      if (hit.nodeId === undefined) {
+        return;
+      }
+
       const node = findNode(this.graph, hit.nodeId);
       if (node === undefined) {
         return;
@@ -205,6 +246,7 @@ export class LexiKnotController {
 
       this.canvas.setPointerCapture(event.pointerId);
       this.selectedNodeId = node.id;
+      this.selectedEdgeId = null;
       this.pendingSourceNodeId = null;
       this.dragState = {
         kind: "node",
@@ -219,8 +261,18 @@ export class LexiKnotController {
       return;
     }
 
+    if (hit?.kind === "edge") {
+      this.selectedEdgeId = hit.edgeId ?? null;
+      this.selectedNodeId = null;
+      this.pendingSourceNodeId = null;
+      this.dragState = null;
+      this.render();
+      return;
+    }
+
     this.canvas.setPointerCapture(event.pointerId);
     this.selectedNodeId = null;
+    this.selectedEdgeId = null;
     this.pendingSourceNodeId = null;
     this.dragState = {
       kind: "pan",
@@ -279,11 +331,15 @@ export class LexiKnotController {
       if (this.dragState.kind === "connection" && this.pendingSourceNodeId !== null) {
         const worldPoint = screenToWorld(getCanvasPoint(this.canvas, event), this.viewport);
         const hit = hitTestGraph(this.graph, worldPoint);
-        if (hit?.kind === "inputPort") {
-          this.graph = connectFlow(this.graph, this.pendingSourceNodeId, hit.nodeId);
-          this.selectedNodeId = hit.nodeId;
-          this.parseMessage = null;
-          this.updateMatchResult();
+        if (hit?.kind === "inputPort" && hit.nodeId !== undefined) {
+          const nextGraph = connectFlow(this.graph, this.pendingSourceNodeId, hit.nodeId);
+          if (nextGraph !== this.graph) {
+            this.graph = nextGraph;
+            this.selectedNodeId = null;
+            this.selectedEdgeId = `${this.pendingSourceNodeId}-to-${hit.nodeId}`;
+            this.parseMessage = null;
+            this.updateMatchResult();
+          }
         }
 
         this.pendingSourceNodeId = null;
@@ -331,6 +387,7 @@ export class LexiKnotController {
       graph: this.graph,
       viewport: this.viewport,
       selectedNodeId: this.selectedNodeId,
+      selectedEdgeId: this.selectedEdgeId,
       pendingSourceNodeId: this.pendingSourceNodeId,
       highlightedNodeIds: this.getHighlightedNodeIds(),
       nodeText: this.nodeText,
@@ -349,6 +406,12 @@ export class LexiKnotController {
     return this.selectedNodeId === null
       ? null
       : (findNode(this.graph, this.selectedNodeId) ?? null);
+  }
+
+  private getSelectedEdge(): LexiEdge | null {
+    return this.selectedEdgeId === null
+      ? null
+      : (this.graph.edges.find((edge) => edge.id === this.selectedEdgeId) ?? null);
   }
 
   private updateMatchResult(): void {
@@ -389,6 +452,8 @@ function getUpdatedNodeData(node: LexiNode, value: string): NodeData | null {
     case "whitespaceCharacter":
     case "lineStart":
     case "lineEnd":
+    case "sequenceThen":
+    case "oneOrMore":
     case "start":
     case "end":
       return null;

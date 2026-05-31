@@ -11,6 +11,8 @@ export type NodeType =
   | "whitespaceCharacter"
   | "lineStart"
   | "lineEnd"
+  | "sequenceThen"
+  | "oneOrMore"
   | "regexFragment";
 
 export type PortType = "flow" | "data";
@@ -62,6 +64,14 @@ export interface LineEndNodeData {
   readonly kind: "lineEnd";
 }
 
+export interface SequenceThenNodeData {
+  readonly kind: "sequenceThen";
+}
+
+export interface OneOrMoreNodeData {
+  readonly kind: "oneOrMore";
+}
+
 export interface RegexFragmentNodeData {
   readonly kind: "regexFragment";
   readonly expression: string;
@@ -79,6 +89,8 @@ export type NodeData =
   | WhitespaceCharacterNodeData
   | LineStartNodeData
   | LineEndNodeData
+  | SequenceThenNodeData
+  | OneOrMoreNodeData
   | RegexFragmentNodeData;
 
 export interface LexiNode<TData extends NodeData = NodeData> {

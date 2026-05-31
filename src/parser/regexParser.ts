@@ -23,7 +23,9 @@ export type RegexToken =
         | "wordCharacter"
         | "whitespaceCharacter"
         | "lineStart"
-        | "lineEnd";
+        | "lineEnd"
+        | "sequenceThen"
+        | "oneOrMore";
       readonly raw: string;
     }
   | {
@@ -69,7 +71,7 @@ export function parseRegexPattern(pattern: string): RegexParseResult {
     }
 
     const tokens =
-      ast.alternatives[0]?.elements.map((element) => toRegexToken(element, warnings)) ?? [];
+      ast.alternatives[0]?.elements.flatMap((element) => toRegexTokens(element, warnings)) ?? [];
     return { ok: true, tokens, warnings };
   } catch (error) {
     return {
@@ -79,78 +81,94 @@ export function parseRegexPattern(pattern: string): RegexParseResult {
   }
 }
 
-function toRegexToken(element: AST.Element, warnings: string[]): RegexToken {
+function toRegexTokens(element: AST.Element, warnings: string[]): readonly RegexToken[] {
   switch (element.type) {
     case "Character":
-      return {
-        kind: "literal",
-        value: String.fromCodePoint(element.value),
-        raw: element.raw,
-      };
+      return [
+        {
+          kind: "literal",
+          value: String.fromCodePoint(element.value),
+          raw: element.raw,
+        },
+      ];
     case "CharacterClass":
-      return {
-        kind: "characterClass",
-        value: unwrapCharacterClass(element.raw),
-        raw: element.raw,
-      };
+      return [
+        {
+          kind: "characterClass",
+          value: unwrapCharacterClass(element.raw),
+          raw: element.raw,
+        },
+      ];
     case "CharacterSet":
       if (element.raw === ".") {
-        return { kind: "anyCharacter", raw: element.raw };
+        return [{ kind: "anyCharacter", raw: element.raw }];
       }
 
       if (element.raw === "\\d") {
-        return { kind: "digitCharacter", raw: element.raw };
+        return [{ kind: "digitCharacter", raw: element.raw }];
       }
 
       if (element.raw === "\\w") {
-        return { kind: "wordCharacter", raw: element.raw };
+        return [{ kind: "wordCharacter", raw: element.raw }];
       }
 
       if (element.raw === "\\s") {
-        return { kind: "whitespaceCharacter", raw: element.raw };
+        return [{ kind: "whitespaceCharacter", raw: element.raw }];
       }
 
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
-      return {
-        kind: "regexFragment",
-        expression: element.raw,
-        label: "Character Set",
-        raw: element.raw,
-      };
+      return [
+        {
+          kind: "regexFragment",
+          expression: element.raw,
+          label: "Character Set",
+          raw: element.raw,
+        },
+      ];
     case "Quantifier":
+      if (element.min === 1 && element.max === Infinity && element.raw.endsWith("+")) {
+        return [...toRegexTokens(element.element, warnings), { kind: "oneOrMore", raw: "+" }];
+      }
+
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
-      return {
-        kind: "regexFragment",
-        expression: element.raw,
-        label: "Quantifier",
-        raw: element.raw,
-      };
+      return [
+        {
+          kind: "regexFragment",
+          expression: element.raw,
+          label: "Quantifier",
+          raw: element.raw,
+        },
+      ];
     case "Assertion":
       if (element.raw === "^") {
-        return { kind: "lineStart", raw: element.raw };
+        return [{ kind: "lineStart", raw: element.raw }];
       }
 
       if (element.raw === "$") {
-        return { kind: "lineEnd", raw: element.raw };
+        return [{ kind: "lineEnd", raw: element.raw }];
       }
 
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
-      return {
-        kind: "regexFragment",
-        expression: element.raw,
-        label: "Assertion",
-        raw: element.raw,
-      };
+      return [
+        {
+          kind: "regexFragment",
+          expression: element.raw,
+          label: "Assertion",
+          raw: element.raw,
+        },
+      ];
     case "Backreference":
     case "CapturingGroup":
     case "ExpressionCharacterClass":
     case "Group":
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
-      return {
-        kind: "regexFragment",
-        expression: element.raw,
-        label: element.type,
-        raw: element.raw,
-      };
+      return [
+        {
+          kind: "regexFragment",
+          expression: element.raw,
+          label: element.type,
+          raw: element.raw,
+        },
+      ];
   }
 }

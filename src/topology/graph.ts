@@ -1,6 +1,7 @@
 import type { IdFactory } from "../core/id";
 import { parseRegexPattern, type RegexParseResult, type RegexToken } from "../parser/regexParser";
 import { escapeLiteral, normalizeCharacterClass } from "../parser/regexEscapes";
+import { canConnectNodeTypes } from "./semantics";
 import type { LexiEdge, LexiGraph, LexiNode, NodeData, NodeType, Port } from "./types";
 
 const FLOW_INPUT: Port = { id: "in", type: "flow" };
@@ -132,7 +133,8 @@ export function connectFlow(
     source === undefined ||
     target === undefined ||
     sourcePort === undefined ||
-    targetPort === undefined
+    targetPort === undefined ||
+    !canConnectNodeTypes(source.type, target.type)
   ) {
     return graph;
   }
@@ -224,6 +226,10 @@ function createDefaultData(type: AddNodeRequest["type"]): NodeData {
       return { kind: "lineStart" };
     case "lineEnd":
       return { kind: "lineEnd" };
+    case "sequenceThen":
+      return { kind: "sequenceThen" };
+    case "oneOrMore":
+      return { kind: "oneOrMore" };
     case "regexFragment":
       return { kind: "regexFragment", expression: "", label: "Fragment" };
   }
@@ -247,6 +253,10 @@ function nodeToRegexSegment(node: LexiNode): string {
       return "^";
     case "lineEnd":
       return "$";
+    case "sequenceThen":
+      return "";
+    case "oneOrMore":
+      return "+";
     case "regexFragment":
       return node.data.expression;
     case "start":
@@ -269,14 +279,16 @@ function createGraphFromRegexTokens(parsed: Extract<RegexParseResult, { ok: true
   const edges: LexiEdge[] = [];
   let previousNodeId = "start";
 
-  parsed.tokens.forEach((token, index) => {
+  const tokens = insertSequenceOperators(parsed.tokens);
+
+  tokens.forEach((token, index) => {
     const node = createNodeFromRegexToken(token, index);
     nodes.push(node);
     edges.push(createFlowEdge(previousNodeId, node.id));
     previousNodeId = node.id;
   });
 
-  const endX = 240 + parsed.tokens.length * 168;
+  const endX = 240 + tokens.length * 168;
   nodes.push({
     id: "end",
     type: "end",
@@ -366,6 +378,24 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
+    case "sequenceThen":
+      return {
+        id: `sequenceThen-${index + 1}`,
+        type: "sequenceThen",
+        position,
+        data: { kind: "sequenceThen" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "oneOrMore":
+      return {
+        id: `oneOrMore-${index + 1}`,
+        type: "oneOrMore",
+        position,
+        data: { kind: "oneOrMore" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
     case "regexFragment":
       return {
         id: `regexFragment-${index + 1}`,
@@ -379,6 +409,43 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
+  }
+}
+
+function insertSequenceOperators(tokens: readonly RegexToken[]): readonly RegexToken[] {
+  const nextTokens: RegexToken[] = [];
+
+  tokens.forEach((token) => {
+    const previous = nextTokens.at(-1);
+    if (previous !== undefined && needsSequenceOperator(previous, token)) {
+      nextTokens.push({ kind: "sequenceThen", raw: "" });
+    }
+
+    nextTokens.push(token);
+  });
+
+  return nextTokens;
+}
+
+function needsSequenceOperator(previous: RegexToken, next: RegexToken): boolean {
+  return isNounToken(previous) && isNounToken(next);
+}
+
+function isNounToken(token: RegexToken): boolean {
+  switch (token.kind) {
+    case "literal":
+    case "characterClass":
+    case "anyCharacter":
+    case "digitCharacter":
+    case "wordCharacter":
+    case "whitespaceCharacter":
+    case "lineStart":
+    case "lineEnd":
+    case "regexFragment":
+      return true;
+    case "sequenceThen":
+    case "oneOrMore":
+      return false;
   }
 }
 

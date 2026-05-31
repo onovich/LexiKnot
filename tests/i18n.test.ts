@@ -24,7 +24,9 @@ describe("i18n language resolution", () => {
       expect(messages[language].parseToGraph.length).toBeGreaterThan(0);
       expect(messages[language].nodes.literal.length).toBeGreaterThan(0);
       expect(messages[language].nodes.digitCharacter.length).toBeGreaterThan(0);
-      expect(messages[language].characterClassHelp.length).toBeGreaterThan(0);
+      expect(messages[language].nodes.sequenceThen.length).toBeGreaterThan(0);
+      expect(messages[language].nodeHelp.characterClass.length).toBeGreaterThan(0);
+      expect(messages[language].edgeHelp.subject.length).toBeGreaterThan(0);
     }
   });
 });

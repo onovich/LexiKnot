@@ -11,6 +11,7 @@ export interface RenderState {
   readonly graph: LexiGraph;
   readonly viewport: Viewport;
   readonly selectedNodeId: string | null;
+  readonly selectedEdgeId: string | null;
   readonly pendingSourceNodeId: string | null;
   readonly highlightedNodeIds: readonly string[];
   readonly nodeText: NodeText;
@@ -23,8 +24,9 @@ export interface ConnectionPreview {
 }
 
 export interface HitResult {
-  readonly kind: "node" | "inputPort" | "outputPort";
-  readonly nodeId: string;
+  readonly kind: "node" | "inputPort" | "outputPort" | "edge";
+  readonly nodeId?: string;
+  readonly edgeId?: string;
 }
 
 export const NODE_SIZE = {
