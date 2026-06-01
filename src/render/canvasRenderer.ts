@@ -325,22 +325,46 @@ function getNodeTitle(node: LexiNode, text: RenderState["nodeText"]): string {
       return text.literal;
     case "characterClass":
       return text.characterClass;
+    case "excludedCharacterClass":
+      return text.excludedCharacterClass;
     case "anyCharacter":
       return text.anyCharacter;
     case "digitCharacter":
       return text.digitCharacter;
+    case "nonDigitCharacter":
+      return text.nonDigitCharacter;
     case "wordCharacter":
       return text.wordCharacter;
+    case "nonWordCharacter":
+      return text.nonWordCharacter;
     case "whitespaceCharacter":
       return text.whitespaceCharacter;
+    case "nonWhitespaceCharacter":
+      return text.nonWhitespaceCharacter;
     case "lineStart":
       return text.lineStart;
     case "lineEnd":
       return text.lineEnd;
+    case "wordBoundary":
+      return text.wordBoundary;
+    case "notWordBoundary":
+      return text.notWordBoundary;
     case "sequenceThen":
       return text.sequenceThen;
+    case "chooseOne":
+      return text.chooseOne;
     case "oneOrMore":
       return text.oneOrMore;
+    case "zeroOrMore":
+      return text.zeroOrMore;
+    case "optional":
+      return text.optional;
+    case "exactCount":
+      return text.exactCount;
+    case "repeatAtLeast":
+      return text.repeatAtLeast;
+    case "repeatBetween":
+      return text.repeatBetween;
     case "regexFragment":
       return text.regexFragment;
   }
@@ -352,22 +376,46 @@ function getNodeSubtitle(node: LexiNode, text: RenderState["nodeText"]): string 
       return node.data.value;
     case "characterClass":
       return `[${node.data.value}]`;
+    case "excludedCharacterClass":
+      return `not ${node.data.value}`;
     case "anyCharacter":
       return ".";
     case "digitCharacter":
       return "\\d";
+    case "nonDigitCharacter":
+      return "\\D";
     case "wordCharacter":
       return "\\w";
+    case "nonWordCharacter":
+      return "\\W";
     case "whitespaceCharacter":
       return "\\s";
+    case "nonWhitespaceCharacter":
+      return "\\S";
     case "lineStart":
       return "^";
     case "lineEnd":
       return "$";
+    case "wordBoundary":
+      return "\\b";
+    case "notWordBoundary":
+      return "\\B";
     case "sequenceThen":
       return "then";
+    case "chooseOne":
+      return "or";
     case "oneOrMore":
       return "+";
+    case "zeroOrMore":
+      return "*";
+    case "optional":
+      return "?";
+    case "exactCount":
+      return node.data.count;
+    case "repeatAtLeast":
+      return `${node.data.min}+`;
+    case "repeatBetween":
+      return `${node.data.min}-${node.data.max}`;
     case "regexFragment":
       return node.data.expression;
     case "start":

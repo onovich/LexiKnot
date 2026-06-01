@@ -14,18 +14,47 @@ export type RegexToken =
       readonly raw: string;
     }
   | {
+      readonly kind: "excludedCharacterClass";
+      readonly value: string;
+      readonly raw: string;
+    }
+  | {
       readonly kind: "anyCharacter";
       readonly raw: string;
     }
   | {
       readonly kind:
         | "digitCharacter"
+        | "nonDigitCharacter"
         | "wordCharacter"
+        | "nonWordCharacter"
         | "whitespaceCharacter"
+        | "nonWhitespaceCharacter"
         | "lineStart"
         | "lineEnd"
+        | "wordBoundary"
+        | "notWordBoundary"
         | "sequenceThen"
-        | "oneOrMore";
+        | "chooseOne"
+        | "oneOrMore"
+        | "zeroOrMore"
+        | "optional";
+      readonly raw: string;
+    }
+  | {
+      readonly kind: "exactCount";
+      readonly count: string;
+      readonly raw: string;
+    }
+  | {
+      readonly kind: "repeatAtLeast";
+      readonly min: string;
+      readonly raw: string;
+    }
+  | {
+      readonly kind: "repeatBetween";
+      readonly min: string;
+      readonly max: string;
       readonly raw: string;
     }
   | {
@@ -56,6 +85,18 @@ export function parseRegexPattern(pattern: string): RegexParseResult {
     const warnings: string[] = [];
 
     if (ast.alternatives.length !== 1) {
+      const alternativeTokens = ast.alternatives.map((alternative) =>
+        alternative.elements.flatMap((element) => toRegexTokens(element, warnings)),
+      );
+
+      if (alternativeTokens.every((tokens) => tokens.length > 0)) {
+        return {
+          ok: true,
+          tokens: interleaveChoices(alternativeTokens),
+          warnings,
+        };
+      }
+
       return {
         ok: true,
         tokens: [
@@ -92,6 +133,16 @@ function toRegexTokens(element: AST.Element, warnings: string[]): readonly Regex
         },
       ];
     case "CharacterClass":
+      if (element.raw.startsWith("[^")) {
+        return [
+          {
+            kind: "excludedCharacterClass",
+            value: unwrapCharacterClass(element.raw),
+            raw: element.raw,
+          },
+        ];
+      }
+
       return [
         {
           kind: "characterClass",
@@ -108,12 +159,24 @@ function toRegexTokens(element: AST.Element, warnings: string[]): readonly Regex
         return [{ kind: "digitCharacter", raw: element.raw }];
       }
 
+      if (element.raw === "\\D") {
+        return [{ kind: "nonDigitCharacter", raw: element.raw }];
+      }
+
       if (element.raw === "\\w") {
         return [{ kind: "wordCharacter", raw: element.raw }];
       }
 
+      if (element.raw === "\\W") {
+        return [{ kind: "nonWordCharacter", raw: element.raw }];
+      }
+
       if (element.raw === "\\s") {
         return [{ kind: "whitespaceCharacter", raw: element.raw }];
+      }
+
+      if (element.raw === "\\S") {
+        return [{ kind: "nonWhitespaceCharacter", raw: element.raw }];
       }
 
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
@@ -128,6 +191,40 @@ function toRegexTokens(element: AST.Element, warnings: string[]): readonly Regex
     case "Quantifier":
       if (element.min === 1 && element.max === Infinity && element.raw.endsWith("+")) {
         return [...toRegexTokens(element.element, warnings), { kind: "oneOrMore", raw: "+" }];
+      }
+
+      if (element.min === 0 && element.max === Infinity && element.raw.endsWith("*")) {
+        return [...toRegexTokens(element.element, warnings), { kind: "zeroOrMore", raw: "*" }];
+      }
+
+      if (element.min === 0 && element.max === 1 && element.raw.endsWith("?")) {
+        return [...toRegexTokens(element.element, warnings), { kind: "optional", raw: "?" }];
+      }
+
+      if (element.min === element.max && Number.isFinite(element.min)) {
+        return [
+          ...toRegexTokens(element.element, warnings),
+          { kind: "exactCount", count: String(element.min), raw: `{${element.min}}` },
+        ];
+      }
+
+      if (Number.isFinite(element.min) && element.max === Infinity) {
+        return [
+          ...toRegexTokens(element.element, warnings),
+          { kind: "repeatAtLeast", min: String(element.min), raw: `{${element.min},}` },
+        ];
+      }
+
+      if (Number.isFinite(element.min) && Number.isFinite(element.max)) {
+        return [
+          ...toRegexTokens(element.element, warnings),
+          {
+            kind: "repeatBetween",
+            min: String(element.min),
+            max: String(element.max),
+            raw: `{${element.min},${element.max}}`,
+          },
+        ];
       }
 
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
@@ -146,6 +243,14 @@ function toRegexTokens(element: AST.Element, warnings: string[]): readonly Regex
 
       if (element.raw === "$") {
         return [{ kind: "lineEnd", raw: element.raw }];
+      }
+
+      if (element.raw === "\\b") {
+        return [{ kind: "wordBoundary", raw: element.raw }];
+      }
+
+      if (element.raw === "\\B") {
+        return [{ kind: "notWordBoundary", raw: element.raw }];
       }
 
       warnings.push(`${element.raw} is represented as a fragment in this MVP.`);
@@ -171,4 +276,20 @@ function toRegexTokens(element: AST.Element, warnings: string[]): readonly Regex
         },
       ];
   }
+}
+
+function interleaveChoices(
+  alternatives: readonly (readonly RegexToken[])[],
+): readonly RegexToken[] {
+  const tokens: RegexToken[] = [];
+
+  alternatives.forEach((alternative, index) => {
+    if (index > 0) {
+      tokens.push({ kind: "chooseOne", raw: "|" });
+    }
+
+    tokens.push(...alternative);
+  });
+
+  return tokens;
 }

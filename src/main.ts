@@ -15,15 +15,29 @@ type AddableNodeType = Exclude<NodeType, "start" | "end">;
 const nounNodeTypes: readonly AddableNodeType[] = [
   "literal",
   "characterClass",
+  "excludedCharacterClass",
   "anyCharacter",
   "digitCharacter",
+  "nonDigitCharacter",
   "wordCharacter",
+  "nonWordCharacter",
   "whitespaceCharacter",
+  "nonWhitespaceCharacter",
   "lineStart",
   "lineEnd",
-  "regexFragment",
+  "wordBoundary",
+  "notWordBoundary",
 ];
-const verbNodeTypes: readonly AddableNodeType[] = ["sequenceThen", "oneOrMore"];
+const verbNodeTypes: readonly AddableNodeType[] = [
+  "sequenceThen",
+  "chooseOne",
+  "oneOrMore",
+  "zeroOrMore",
+  "optional",
+  "exactCount",
+  "repeatAtLeast",
+  "repeatBetween",
+];
 
 let currentLanguage: LanguageCode = getBrowserLanguage();
 let currentMessages = messages[currentLanguage];
@@ -271,11 +285,23 @@ function updateInspector(
   if (
     selected?.data.kind === "literal" ||
     selected?.data.kind === "characterClass" ||
+    selected?.data.kind === "excludedCharacterClass" ||
+    selected?.data.kind === "exactCount" ||
+    selected?.data.kind === "repeatAtLeast" ||
+    selected?.data.kind === "repeatBetween" ||
     selected?.data.kind === "regexFragment"
   ) {
     elements.valueInput.disabled = false;
     elements.valueInput.value =
-      selected.data.kind === "regexFragment" ? selected.data.expression : selected.data.value;
+      selected.data.kind === "regexFragment"
+        ? selected.data.expression
+        : selected.data.kind === "exactCount"
+          ? selected.data.count
+          : selected.data.kind === "repeatAtLeast"
+            ? selected.data.min
+            : selected.data.kind === "repeatBetween"
+              ? `${selected.data.min},${selected.data.max}`
+              : selected.data.value;
   } else {
     elements.valueInput.disabled = true;
     elements.valueInput.value = "";
@@ -430,22 +456,46 @@ function getNodeButtonLabel(type: AddableNodeType, text: Messages): string {
       return text.addLiteral;
     case "characterClass":
       return text.addClass;
+    case "excludedCharacterClass":
+      return text.addExcludedClass;
     case "anyCharacter":
       return text.addAny;
     case "digitCharacter":
       return text.addDigit;
+    case "nonDigitCharacter":
+      return text.addNonDigit;
     case "wordCharacter":
       return text.addWord;
+    case "nonWordCharacter":
+      return text.addNonWord;
     case "whitespaceCharacter":
       return text.addWhitespace;
+    case "nonWhitespaceCharacter":
+      return text.addNonWhitespace;
     case "lineStart":
       return text.addLineStart;
     case "lineEnd":
       return text.addLineEnd;
+    case "wordBoundary":
+      return text.addWordBoundary;
+    case "notWordBoundary":
+      return text.addNotWordBoundary;
     case "sequenceThen":
       return text.addThen;
+    case "chooseOne":
+      return text.addChooseOne;
     case "oneOrMore":
       return text.addOneOrMore;
+    case "zeroOrMore":
+      return text.addZeroOrMore;
+    case "optional":
+      return text.addOptional;
+    case "exactCount":
+      return text.addExactCount;
+    case "repeatAtLeast":
+      return text.addRepeatAtLeast;
+    case "repeatBetween":
+      return text.addRepeatBetween;
     case "regexFragment":
       return text.nodes.regexFragment;
   }

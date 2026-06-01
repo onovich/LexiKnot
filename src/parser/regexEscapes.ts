@@ -9,7 +9,16 @@ export function normalizeCharacterClass(value: string): string {
   return `[${escaped}]`;
 }
 
+export function normalizeExcludedCharacterClass(value: string): string {
+  const escaped = value.replace(/[\\\]^]/g, "\\$&");
+  return `[^${escaped}]`;
+}
+
 export function unwrapCharacterClass(raw: string): string {
+  if (raw.startsWith("[^") && raw.endsWith("]")) {
+    return raw.slice(2, -1);
+  }
+
   if (raw.startsWith("[") && raw.endsWith("]")) {
     return raw.slice(1, -1);
   }

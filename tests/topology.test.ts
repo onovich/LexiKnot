@@ -114,6 +114,40 @@ describe("LexiGraph forward projection", () => {
     expect(graphToRegex(result.graph)).toBe("[a-z]+");
   });
 
+  it("round-trips common natural-language regex nodes", () => {
+    const result = regexToGraph("a|[^0-9]*b?c{3}\\D\\W\\S\\b\\B");
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
+
+    expect(result.graph.nodes.map((node) => node.type)).toContain("chooseOne");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("excludedCharacterClass");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("zeroOrMore");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("optional");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("exactCount");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("nonDigitCharacter");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("nonWordCharacter");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("nonWhitespaceCharacter");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("wordBoundary");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("notWordBoundary");
+    expect(graphToRegex(result.graph)).toBe("a|[^0-9]*b?c{3}\\D\\W\\S\\b\\B");
+  });
+
+  it("round-trips repeat count ranges", () => {
+    const result = regexToGraph("a{2,}b{2,5}");
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
+
+    expect(result.graph.nodes.map((node) => node.type)).toContain("repeatAtLeast");
+    expect(result.graph.nodes.map((node) => node.type)).toContain("repeatBetween");
+    expect(graphToRegex(result.graph)).toBe("a{2,}b{2,5}");
+  });
+
   it("requires a verb node between two noun nodes", () => {
     const createId = createIdFactory();
     const first = addNode(createInitialGraph(), { type: "literal", x: 240, y: 160 }, createId);

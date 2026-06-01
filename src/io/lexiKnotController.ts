@@ -444,16 +444,34 @@ function getUpdatedNodeData(node: LexiNode, value: string): NodeData | null {
       return { ...node.data, value };
     case "characterClass":
       return { ...node.data, value };
+    case "excludedCharacterClass":
+      return { ...node.data, value };
     case "regexFragment":
       return { ...node.data, expression: value };
+    case "exactCount":
+      return { ...node.data, count: value };
+    case "repeatAtLeast":
+      return { ...node.data, min: value };
+    case "repeatBetween": {
+      const [min = "", max = ""] = value.split(",", 2).map((part) => part.trim());
+      return { ...node.data, min, max };
+    }
     case "anyCharacter":
     case "digitCharacter":
+    case "nonDigitCharacter":
     case "wordCharacter":
+    case "nonWordCharacter":
     case "whitespaceCharacter":
+    case "nonWhitespaceCharacter":
     case "lineStart":
     case "lineEnd":
+    case "wordBoundary":
+    case "notWordBoundary":
     case "sequenceThen":
+    case "chooseOne":
     case "oneOrMore":
+    case "zeroOrMore":
+    case "optional":
     case "start":
     case "end":
       return null;

@@ -9,16 +9,28 @@ export function getNodeRole(type: NodeType): NodeRole {
     case "end":
       return "system";
     case "sequenceThen":
+    case "chooseOne":
     case "oneOrMore":
+    case "zeroOrMore":
+    case "optional":
+    case "exactCount":
+    case "repeatAtLeast":
+    case "repeatBetween":
       return "verb";
     case "literal":
     case "characterClass":
+    case "excludedCharacterClass":
     case "anyCharacter":
     case "digitCharacter":
+    case "nonDigitCharacter":
     case "wordCharacter":
+    case "nonWordCharacter":
     case "whitespaceCharacter":
+    case "nonWhitespaceCharacter":
     case "lineStart":
     case "lineEnd":
+    case "wordBoundary":
+    case "notWordBoundary":
     case "regexFragment":
       return "noun";
   }

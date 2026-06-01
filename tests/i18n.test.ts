@@ -24,9 +24,20 @@ describe("i18n language resolution", () => {
       expect(messages[language].parseToGraph.length).toBeGreaterThan(0);
       expect(messages[language].nodes.literal.length).toBeGreaterThan(0);
       expect(messages[language].nodes.digitCharacter.length).toBeGreaterThan(0);
+      expect(messages[language].nodes.nonDigitCharacter.length).toBeGreaterThan(0);
       expect(messages[language].nodes.sequenceThen.length).toBeGreaterThan(0);
+      expect(messages[language].nodes.repeatBetween.length).toBeGreaterThan(0);
+      expect(messages[language].addChooseOne.length).toBeGreaterThan(0);
+      expect(messages[language].addRepeatBetween.length).toBeGreaterThan(0);
       expect(messages[language].nodeHelp.characterClass.length).toBeGreaterThan(0);
       expect(messages[language].edgeHelp.subject.length).toBeGreaterThan(0);
     }
+  });
+
+  it("uses natural-language Chinese labels instead of raw regex symbols", () => {
+    expect(messages.zh.addLineStart).not.toBe("^");
+    expect(messages.zh.addLineEnd).not.toBe("$");
+    expect(messages.zh.addChooseOne).not.toBe("|");
+    expect(messages.zh.addOneOrMore).not.toBe("+");
   });
 });

@@ -1,6 +1,10 @@
 import type { IdFactory } from "../core/id";
 import { parseRegexPattern, type RegexParseResult, type RegexToken } from "../parser/regexParser";
-import { escapeLiteral, normalizeCharacterClass } from "../parser/regexEscapes";
+import {
+  escapeLiteral,
+  normalizeCharacterClass,
+  normalizeExcludedCharacterClass,
+} from "../parser/regexEscapes";
 import { canConnectNodeTypes } from "./semantics";
 import type { LexiEdge, LexiGraph, LexiNode, NodeData, NodeType, Port } from "./types";
 
@@ -214,22 +218,46 @@ function createDefaultData(type: AddNodeRequest["type"]): NodeData {
       return { kind: "literal", value: "text" };
     case "characterClass":
       return { kind: "characterClass", value: "a-z" };
+    case "excludedCharacterClass":
+      return { kind: "excludedCharacterClass", value: "0-9" };
     case "anyCharacter":
       return { kind: "anyCharacter" };
     case "digitCharacter":
       return { kind: "digitCharacter" };
+    case "nonDigitCharacter":
+      return { kind: "nonDigitCharacter" };
     case "wordCharacter":
       return { kind: "wordCharacter" };
+    case "nonWordCharacter":
+      return { kind: "nonWordCharacter" };
     case "whitespaceCharacter":
       return { kind: "whitespaceCharacter" };
+    case "nonWhitespaceCharacter":
+      return { kind: "nonWhitespaceCharacter" };
     case "lineStart":
       return { kind: "lineStart" };
     case "lineEnd":
       return { kind: "lineEnd" };
+    case "wordBoundary":
+      return { kind: "wordBoundary" };
+    case "notWordBoundary":
+      return { kind: "notWordBoundary" };
     case "sequenceThen":
       return { kind: "sequenceThen" };
+    case "chooseOne":
+      return { kind: "chooseOne" };
     case "oneOrMore":
       return { kind: "oneOrMore" };
+    case "zeroOrMore":
+      return { kind: "zeroOrMore" };
+    case "optional":
+      return { kind: "optional" };
+    case "exactCount":
+      return { kind: "exactCount", count: "3" };
+    case "repeatAtLeast":
+      return { kind: "repeatAtLeast", min: "2" };
+    case "repeatBetween":
+      return { kind: "repeatBetween", min: "2", max: "5" };
     case "regexFragment":
       return { kind: "regexFragment", expression: "", label: "Fragment" };
   }
@@ -241,22 +269,49 @@ function nodeToRegexSegment(node: LexiNode): string {
       return escapeLiteral(node.data.value);
     case "characterClass":
       return normalizeCharacterClass(node.data.value);
+    case "excludedCharacterClass":
+      return normalizeExcludedCharacterClass(node.data.value);
     case "anyCharacter":
       return ".";
     case "digitCharacter":
       return "\\d";
+    case "nonDigitCharacter":
+      return "\\D";
     case "wordCharacter":
       return "\\w";
+    case "nonWordCharacter":
+      return "\\W";
     case "whitespaceCharacter":
       return "\\s";
+    case "nonWhitespaceCharacter":
+      return "\\S";
     case "lineStart":
       return "^";
     case "lineEnd":
       return "$";
+    case "wordBoundary":
+      return "\\b";
+    case "notWordBoundary":
+      return "\\B";
     case "sequenceThen":
       return "";
+    case "chooseOne":
+      return "|";
     case "oneOrMore":
       return "+";
+    case "zeroOrMore":
+      return "*";
+    case "optional":
+      return "?";
+    case "exactCount":
+      return `{${normalizeCount(node.data.count)}}`;
+    case "repeatAtLeast":
+      return `{${normalizeCount(node.data.min)},}`;
+    case "repeatBetween":
+      return `{${normalizeCount(node.data.min)},${normalizeMaxCount(
+        node.data.min,
+        node.data.max,
+      )}}`;
     case "regexFragment":
       return node.data.expression;
     case "start":
@@ -324,6 +379,15 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
+    case "excludedCharacterClass":
+      return {
+        id: `excludedCharacterClass-${index + 1}`,
+        type: "excludedCharacterClass",
+        position,
+        data: { kind: "excludedCharacterClass", value: token.value },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
     case "anyCharacter":
       return {
         id: `anyCharacter-${index + 1}`,
@@ -342,6 +406,15 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
+    case "nonDigitCharacter":
+      return {
+        id: `nonDigitCharacter-${index + 1}`,
+        type: "nonDigitCharacter",
+        position,
+        data: { kind: "nonDigitCharacter" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
     case "wordCharacter":
       return {
         id: `wordCharacter-${index + 1}`,
@@ -351,12 +424,30 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
+    case "nonWordCharacter":
+      return {
+        id: `nonWordCharacter-${index + 1}`,
+        type: "nonWordCharacter",
+        position,
+        data: { kind: "nonWordCharacter" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
     case "whitespaceCharacter":
       return {
         id: `whitespaceCharacter-${index + 1}`,
         type: "whitespaceCharacter",
         position,
         data: { kind: "whitespaceCharacter" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "nonWhitespaceCharacter":
+      return {
+        id: `nonWhitespaceCharacter-${index + 1}`,
+        type: "nonWhitespaceCharacter",
+        position,
+        data: { kind: "nonWhitespaceCharacter" },
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
@@ -378,6 +469,24 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
+    case "wordBoundary":
+      return {
+        id: `wordBoundary-${index + 1}`,
+        type: "wordBoundary",
+        position,
+        data: { kind: "wordBoundary" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "notWordBoundary":
+      return {
+        id: `notWordBoundary-${index + 1}`,
+        type: "notWordBoundary",
+        position,
+        data: { kind: "notWordBoundary" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
     case "sequenceThen":
       return {
         id: `sequenceThen-${index + 1}`,
@@ -387,12 +496,66 @@ function createNodeFromRegexToken(token: RegexToken, index: number): LexiNode {
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
+    case "chooseOne":
+      return {
+        id: `chooseOne-${index + 1}`,
+        type: "chooseOne",
+        position,
+        data: { kind: "chooseOne" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
     case "oneOrMore":
       return {
         id: `oneOrMore-${index + 1}`,
         type: "oneOrMore",
         position,
         data: { kind: "oneOrMore" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "zeroOrMore":
+      return {
+        id: `zeroOrMore-${index + 1}`,
+        type: "zeroOrMore",
+        position,
+        data: { kind: "zeroOrMore" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "optional":
+      return {
+        id: `optional-${index + 1}`,
+        type: "optional",
+        position,
+        data: { kind: "optional" },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "exactCount":
+      return {
+        id: `exactCount-${index + 1}`,
+        type: "exactCount",
+        position,
+        data: { kind: "exactCount", count: token.count },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "repeatAtLeast":
+      return {
+        id: `repeatAtLeast-${index + 1}`,
+        type: "repeatAtLeast",
+        position,
+        data: { kind: "repeatAtLeast", min: token.min },
+        inputs: [FLOW_INPUT],
+        outputs: [FLOW_OUTPUT],
+      };
+    case "repeatBetween":
+      return {
+        id: `repeatBetween-${index + 1}`,
+        type: "repeatBetween",
+        position,
+        data: { kind: "repeatBetween", min: token.min, max: token.max },
         inputs: [FLOW_INPUT],
         outputs: [FLOW_OUTPUT],
       };
@@ -435,18 +598,43 @@ function isNounToken(token: RegexToken): boolean {
   switch (token.kind) {
     case "literal":
     case "characterClass":
+    case "excludedCharacterClass":
     case "anyCharacter":
     case "digitCharacter":
+    case "nonDigitCharacter":
     case "wordCharacter":
+    case "nonWordCharacter":
     case "whitespaceCharacter":
+    case "nonWhitespaceCharacter":
     case "lineStart":
     case "lineEnd":
+    case "wordBoundary":
+    case "notWordBoundary":
     case "regexFragment":
       return true;
     case "sequenceThen":
+    case "chooseOne":
     case "oneOrMore":
+    case "zeroOrMore":
+    case "optional":
+    case "exactCount":
+    case "repeatAtLeast":
+    case "repeatBetween":
       return false;
   }
+}
+
+function normalizeCount(count: string): string {
+  const parsed = Number.parseInt(count, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? String(parsed) : "1";
+}
+
+function normalizeMaxCount(min: string, max: string): string {
+  const normalizedMin = Number.parseInt(normalizeCount(min), 10);
+  const parsedMax = Number.parseInt(max, 10);
+  return Number.isFinite(parsedMax) && parsedMax >= normalizedMin
+    ? String(parsedMax)
+    : String(normalizedMin);
 }
 
 function createFlowEdge(sourceNodeId: string, targetNodeId: string): LexiEdge {
