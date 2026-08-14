@@ -1,59 +1,46 @@
 # LexiKnot
 
-LexiKnot is a lightweight TypeScript engine for bidirectional regex visualization on an infinite Canvas 2D node graph.
+[简体中文](README.zh-CN.md)
 
-Phase 0-1 currently includes:
+A TypeScript tool that turns regular expressions into an editable infinite-canvas graph and back again.
 
-- Vite + strict TypeScript project setup.
-- Layered source directories: `core`, `parser`, `topology`, `render`, and `io`.
-- Immutable `LexiGraph` helpers for adding nodes, moving nodes, connecting flow ports, and generating simple regex output.
-- Canvas MVP with pan, zoom, node dragging, port connection, and live regex output.
-- Regex input powered by `regexpp`, with reverse graph generation for linear patterns.
-- Fragment fallback nodes for quantifiers, groups, assertions, and other syntax that is not yet modeled as first-class graph nodes.
-- Full-match test string panel with graph highlighting on successful matches.
-- Language switcher with browser-language default for English, Chinese, Japanese, Spanish, Brazilian Portuguese, and Russian.
-- Vitest coverage for topology, render hit testing, and architecture boundaries.
+![LexiKnot cover](docs/cover.png)
 
-## Commands
+## What it includes
 
-```powershell
-cmd /c npm.cmd install
-cmd /c npm.cmd run dev
-cmd /c npm.cmd run validate
+- Regex-to-graph and graph-to-regex flow.
+- Infinite-canvas editing.
+- TypeScript tests.
+
+## Getting started
+
+Install dependencies and start the local version:
+
+```bash
+npm install
+npm run dev
 ```
 
-Manual UI test on Windows:
+The repository also provides `npm run build`、`npm run test`、`npm run lint`.
 
-```powershell
-.\OpenTestUI.cmd
-```
+## Repository map
 
-Individual checks:
+- `src/` — Application and library source.
+- `docs/` — Project documentation and design notes.
+- `tests/` — Automated tests and validation fixtures.
+- `index.html` — Web entry point.
+- `package.json` — Package scripts and dependencies.
 
-```powershell
-cmd /c npm.cmd run lint
-cmd /c npm.cmd run typecheck
-cmd /c npm.cmd run build
-cmd /c npm.cmd run test
-cmd /c npm.cmd run format
-```
+## Documentation
 
-## Architecture
+- [`docs/LexiKnot-project-brief.md`](docs/LexiKnot-project-brief.md)
+- [`docs/project-knowledge.md`](docs/project-knowledge.md)
+- [`docs/progress.md`](docs/progress.md)
 
-Dependency direction is:
+## Status
 
-```text
-io/app -> render -> topology -> parser -> core
-```
+The repository contains the implementation and project material described above. Automated tests are included; compatibility still depends on the target runtime, editor, or platform.
 
-Keep parser code free of DOM, Canvas, coordinates, and layout concerns. Keep render code free of regex parsing logic.
+## License
 
-## Current Testing UI
-
-Run the dev server and open the local URL:
-
-```powershell
-.\OpenTestUI.cmd
-```
-
-Use the right inspector to parse a regex into graph nodes, edit selected node values, and test whether a sample string fully matches the generated regex.
+No open-source license is currently included in this repository.
